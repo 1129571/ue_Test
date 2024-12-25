@@ -15,6 +15,8 @@ public:
 	AMultiShootCharacter();
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	//注册需要复制的变量的函数
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -33,7 +35,16 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverHeadWidget;
+
+	// 标记为需要复制的变量
+	UPROPERTY(ReplicatedUsing = onRep_OverlappingWeapon)
+	class AWeapon* OverlappingWeapon;
+
+	//定义一个无参无返回值的函数,作为复制变量改变使调用的函数
+	//注意 : 需要在复制变量的使用 UPROPERTY(ReplicatedUsing = 本函数名称) 标记
+	UFUNCTION()
+	void onRep_OverlappingWeapon(AWeapon* LastWeapon);
 public:	
 
-	
+	void SetOverlappingWeapon(AWeapon* InWeapon);
 };

@@ -6,7 +6,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/WidgetComponent.h"
-
+#include "Net/UnrealNetwork.h"
+#include "Weapon/Weapon.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -69,6 +70,42 @@ void AMultiShootCharacter::LookUp(float AxisValue)
 	AddControllerPitchInput(AxisValue);
 }
 
+void AMultiShootCharacter::onRep_OverlappingWeapon(AWeapon* LastWeapon)
+{
+	if (OverlappingWeapon)
+	{
+		OverlappingWeapon->ShowPickupWidget(true);
+	}
+	else
+	{
+		LastWeapon->ShowPickupWidget(false);
+	}
+}
+
+void AMultiShootCharacter::SetOverlappingWeapon(AWeapon* InWeapon)
+{
+	if (IsLocallyControlled())
+	{
+		if (!InWeapon)
+		{
+			OverlappingWeapon->ShowPickupWidget(false);
+		}
+	}
+
+	OverlappingWeapon = InWeapon;
+
+	//ListenServer上控制的角色也可以正常显示PickupWidget
+	//客户端控制的角色---复制变量改变导致PickupWidget可视性变化
+	//ListenServer端控制的角色---服务器自己判断让自己控制的角色PickupWidget可视性变化
+	if (IsLocallyControlled())
+	{
+		if (OverlappingWeapon)
+		{
+			OverlappingWeapon->ShowPickupWidget(true);
+		}
+	}
+}
+
 void AMultiShootCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -86,6 +123,19 @@ void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAxis("MoveRight", this, &ThisClass::MoveRight);
 	PlayerInputComponent->BindAxis("Turn", this, &ThisClass::Turn);
 	PlayerInputComponent->BindAxis("LookUp", this, &ThisClass::LookUp);
+
+}
+
+//ListenServer永远不会被调用该函数, 只会在客户端执行
+void AMultiShootCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	//注册要复制的变量
+	//参数 : 具有复制变量的类	需要被复制的变量
+	//DOREPLIFETIME(AMultiShootCharacter, OverlappingWeapon);
+	//增加了把这个变量复制给哪个客户端, 该例只会复制给Pawn的拥有者
+	DOREPLIFETIME_CONDITION(AMultiShootCharacter, OverlappingWeapon, COND_OwnerOnly);
 
 }
 
