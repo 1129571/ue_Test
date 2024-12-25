@@ -5,6 +5,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/WidgetComponent.h"
 
 
 AMultiShootCharacter::AMultiShootCharacter()
@@ -24,6 +25,9 @@ AMultiShootCharacter::AMultiShootCharacter()
 	bUseControllerRotationYaw = false;		//不希望角色和控制器一起旋转
 	//希望角色朝向运动方向
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	OverHeadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverHeadWidget"));
+	OverHeadWidget->SetupAttachment(RootComponent);
 }
 
 void AMultiShootCharacter::BeginPlay()
