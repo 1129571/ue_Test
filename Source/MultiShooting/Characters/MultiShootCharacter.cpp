@@ -8,6 +8,7 @@
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Weapon/Weapon.h"
+#include "MultiShootComponents/CombatComponent.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -29,6 +30,9 @@ AMultiShootCharacter::AMultiShootCharacter()
 
 	OverHeadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverHeadWidget"));
 	OverHeadWidget->SetupAttachment(RootComponent);
+
+	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
+	Combat->SetIsReplicated(true);
 }
 
 void AMultiShootCharacter::BeginPlay()
@@ -68,6 +72,15 @@ void AMultiShootCharacter::Turn(float AxisValue)
 void AMultiShootCharacter::LookUp(float AxisValue)
 {
 	AddControllerPitchInput(AxisValue);
+}
+
+void AMultiShootCharacter::EquipWeapon()
+{
+	//这样只有服务器可以执行
+	if (Combat && HasAuthority())
+	{
+		Combat->EquipWeaponFun(OverlappingWeapon);
+	}
 }
 
 void AMultiShootCharacter::onRep_OverlappingWeapon(AWeapon* LastWeapon)
@@ -118,6 +131,7 @@ void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	//直接绑定到ACharacter的Jump, 便于测试, 之后覆写修改
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &ThisClass::EquipWeapon);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ThisClass::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ThisClass::MoveRight);
@@ -139,4 +153,12 @@ void AMultiShootCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 }
 
+void AMultiShootCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	if (Combat)
+	{
+		Combat->OwnedCharacter = this;
+	}
+}
 

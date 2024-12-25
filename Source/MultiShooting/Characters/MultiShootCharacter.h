@@ -17,6 +17,8 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	//注册需要复制的变量的函数
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//在所有组件被初始化并且基本属性设置好后调用. 构造之后, BeginPlay之前
+	virtual void PostInitializeComponents() override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -25,6 +27,7 @@ protected:
 	void MoveRight(float AxisValue);
 	void Turn(float AxisValue);
 	void LookUp(float AxisValue);
+	void EquipWeapon();
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -35,6 +38,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverHeadWidget;
+
+	UPROPERTY(VisibleAnywhere)
+	class UCombatComponent* Combat;
 
 	// 标记为需要复制的变量
 	UPROPERTY(ReplicatedUsing = onRep_OverlappingWeapon)
