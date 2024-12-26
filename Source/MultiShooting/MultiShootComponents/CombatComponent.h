@@ -18,11 +18,15 @@ public:
 	friend class AMultiShootCharacter;
 	void EquipWeaponFun(class AWeapon* WeaponToEquip);
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 protected:
 	virtual void BeginPlay() override;
 
 private:
 	class AMultiShootCharacter* OwnedCharacter;
+
+	UPROPERTY(Replicated)
 	class AWeapon* EquippedWeapon;
 		
 };

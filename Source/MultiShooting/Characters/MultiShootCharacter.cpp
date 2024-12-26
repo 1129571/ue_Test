@@ -131,6 +131,11 @@ void AMultiShootCharacter::SetOverlappingWeapon(AWeapon* InWeapon)
 	}
 }
 
+bool AMultiShootCharacter::IsWeaponEquipped()
+{
+	return (Combat && Combat->EquippedWeapon);
+}
+
 void AMultiShootCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
