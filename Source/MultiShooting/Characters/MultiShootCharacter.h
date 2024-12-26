@@ -27,7 +27,10 @@ protected:
 	void MoveRight(float AxisValue);
 	void Turn(float AxisValue);
 	void LookUp(float AxisValue);
-	void EquipWeapon();
+	void EquipWeaponPressed();
+	void CrouchPressed();
+	void AimPressed();
+	void AimReleased();
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -54,8 +57,10 @@ private:
 	// 该函数只能客户端调用, 服务器执行. 
 	// 并且是可靠的调用, 不会因为网络不稳定而丢失
 	UFUNCTION(Server, Reliable)
-	void ServerEquipEquipWeapon();
+	void ServerEquipWeapon();
 public:	
 	void SetOverlappingWeapon(AWeapon* InWeapon);
 	bool IsWeaponEquipped();
+	bool IsAiming();
+	
 };

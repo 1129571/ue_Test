@@ -38,7 +38,9 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
+	DOREPLIFETIME(UCombatComponent, bIsAiming);
 }
 
 void UCombatComponent::BeginPlay()
@@ -47,6 +49,23 @@ void UCombatComponent::BeginPlay()
 	
 }
 
+void UCombatComponent::SetAiming(bool InbAiming)
+{
+	if (OwnedCharacter && EquippedWeapon)
+	{
+		//这里不进行是否在服务器的检查, 因为
+		//服务器拥有的Character不会执行ServerSetAiming
+		//客户端拥有的Character会执行ServerSetAiming覆盖上一行赋值
+		//具体参考官方文档RPC部分
+		bIsAiming = InbAiming;
+		ServerSetAiming(InbAiming);
+	}
+}
+
+void UCombatComponent::ServerSetAiming_Implementation(bool InbAiming)
+{
+	bIsAiming = InbAiming;
+}
 
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {

@@ -32,4 +32,8 @@ void UMultiShootAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bIsAccelerating = MultiShootCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f ? true : false;
 
 	bWeaponEuipped = MultiShootCharacter->IsWeaponEquipped();
+
+	bIsCrouched = MultiShootCharacter->bIsCrouched;
+
+	bIsAiming = MultiShootCharacter->IsAiming();
 }

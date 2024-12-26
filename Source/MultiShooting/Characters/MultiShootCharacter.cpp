@@ -33,6 +33,9 @@ AMultiShootCharacter::AMultiShootCharacter()
 
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
 	Combat->SetIsReplicated(true);
+
+	//设置可以蹲下
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
 void AMultiShootCharacter::BeginPlay()
@@ -74,7 +77,7 @@ void AMultiShootCharacter::LookUp(float AxisValue)
 	AddControllerPitchInput(AxisValue);
 }
 
-void AMultiShootCharacter::EquipWeapon()
+void AMultiShootCharacter::EquipWeaponPressed()
 {
 	// Combat 是我们自定义的组件, 武器战斗相关操作由其完成
 	if (Combat)
@@ -82,12 +85,40 @@ void AMultiShootCharacter::EquipWeapon()
 		if (HasAuthority())		// 只有服务器可以执行
 			Combat->EquipWeaponFun(OverlappingWeapon);
 		else  //客户端 远程调用, 注意这里的函数名没有_Implementation后缀
-			ServerEquipEquipWeapon();
+			ServerEquipWeapon();
+	}
+}
+
+void AMultiShootCharacter::CrouchPressed()
+{
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Crouch();
+	}
+}
+
+void AMultiShootCharacter::AimPressed()
+{
+	if (Combat)
+	{
+		Combat->SetAiming(true);
+	}
+}
+
+void AMultiShootCharacter::AimReleased()
+{
+	if (Combat)
+	{	
+		Combat->SetAiming(false);
 	}
 }
 
 //客户端远程调用服务器方法
-void AMultiShootCharacter::ServerEquipEquipWeapon_Implementation()
+void AMultiShootCharacter::ServerEquipWeapon_Implementation()
 {
 	if (Combat)
 	{
@@ -136,6 +167,11 @@ bool AMultiShootCharacter::IsWeaponEquipped()
 	return (Combat && Combat->EquippedWeapon);
 }
 
+bool AMultiShootCharacter::IsAiming()
+{
+	return (Combat && Combat->bIsAiming);
+}
+
 void AMultiShootCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -146,9 +182,11 @@ void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	//直接绑定到ACharacter的Jump, 便于测试, 之后覆写修改
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
-	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &ThisClass::EquipWeapon);
+	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &ThisClass::EquipWeaponPressed);
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ThisClass::CrouchPressed);
+	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ThisClass::AimPressed);
+	PlayerInputComponent->BindAction("Aim", IE_Released, this, &ThisClass::AimReleased);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ThisClass::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ThisClass::MoveRight);

@@ -23,10 +23,17 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	void SetAiming(bool InbAiming);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetAiming(bool InbAiming);
+
 private:
 	class AMultiShootCharacter* OwnedCharacter;
 
 	UPROPERTY(Replicated)
 	class AWeapon* EquippedWeapon;
-		
+
+	UPROPERTY(Replicated)
+	bool bIsAiming;
 };
