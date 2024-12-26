@@ -28,6 +28,10 @@ public:
 
 	void ShowPickupWidget(bool bShouldShow);
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -57,12 +61,18 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	class USphereComponent* AreaSphere;
 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+	//复制变量
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_WeaponStateChange, Category = "Weapon Properties")
 	EWeaponState WeaponState;
+
+	//复制变量变化时自动调用的函数
+	UFUNCTION()
+	void OnRep_WeaponStateChange(EWeaponState LastState);
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	class UWidgetComponent* PickupWidget;
 
 public:
-	FORCEINLINE void SetWeaponState(EWeaponState NewWeaponState) { WeaponState = NewWeaponState; }
+	void SetWeaponState(EWeaponState NewWeaponState);
+	FORCEINLINE class USphereComponent* GetAreaSphere() const { return AreaSphere; }
 };

@@ -76,8 +76,20 @@ void AMultiShootCharacter::LookUp(float AxisValue)
 
 void AMultiShootCharacter::EquipWeapon()
 {
-	//这样只有服务器可以执行
-	if (Combat && HasAuthority())
+	// Combat 是我们自定义的组件, 武器战斗相关操作由其完成
+	if (Combat)
+	{
+		if (HasAuthority())		// 只有服务器可以执行
+			Combat->EquipWeaponFun(OverlappingWeapon);
+		else  //客户端 远程调用, 注意这里的函数名没有_Implementation后缀
+			ServerEquipEquipWeapon();
+	}
+}
+
+//客户端远程调用服务器方法
+void AMultiShootCharacter::ServerEquipEquipWeapon_Implementation()
+{
+	if (Combat)
 	{
 		Combat->EquipWeaponFun(OverlappingWeapon);
 	}

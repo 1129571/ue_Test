@@ -50,6 +50,11 @@ private:
 	//注意 : 需要在复制变量的使用 UPROPERTY(ReplicatedUsing = 本函数名称) 标记
 	UFUNCTION()
 	void onRep_OverlappingWeapon(AWeapon* LastWeapon);
+
+	// 该函数只能客户端调用, 服务器执行. 
+	// 并且是可靠的调用, 不会因为网络不稳定而丢失
+	UFUNCTION(Server, Reliable)
+	void ServerEquipEquipWeapon();
 public:	
 
 	void SetOverlappingWeapon(AWeapon* InWeapon);

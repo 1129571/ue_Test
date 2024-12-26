@@ -16,8 +16,6 @@ public:
 	UCombatComponent(); 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	friend class AMultiShootCharacter;
-
-	//我们希望准备武器发生在服务器
 	void EquipWeaponFun(class AWeapon* WeaponToEquip);
 
 protected:

@@ -6,6 +6,7 @@
 #include "Characters/MultiShootCharacter.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Components/SphereComponent.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -28,10 +29,9 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 		HandSocket->AttachActor(EquippedWeapon, OwnedCharacter->GetMesh());
 	}
 	// 武器的Owner设置为OwnedCharacter, 确保可以正确复制Weapon对象
-	// 可以像Character GetLocalRole一样判断是否在服务器??
+	// 通常用来标识某个 Actor 的控制者或拥有者。
+	// 通过设置所有者，可以方便地管理与该 Actor 相关的逻辑，比如权限、所有权、状态同步等。
 	EquippedWeapon->SetOwner(OwnedCharacter);
-	//拾取武器后就不再显示PickupWidget了
-	EquippedWeapon->ShowPickupWidget(false);
 }
 
 void UCombatComponent::BeginPlay()

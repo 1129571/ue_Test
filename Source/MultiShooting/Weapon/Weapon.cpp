@@ -5,6 +5,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Characters/MultiShootCharacter.h"
+#include "Net/UnrealNetwork.h"
 
 AWeapon::AWeapon()
 {
@@ -70,6 +71,49 @@ void AWeapon::OnSphereEndOverlapCallback(UPrimitiveComponent* OverlappedComponen
 	}
 }
 
+//变量被复制时自动调用
+void AWeapon::OnRep_WeaponStateChange(EWeaponState LastState)
+{
+	switch (WeaponState)
+	{
+	case EWeaponState::EWS_Initial:
+		break;
+	case EWeaponState::EWS_Equipped:
+		ShowPickupWidget(false);
+		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		break;
+	case EWeaponState::EWS_Dropped:
+		break;
+	case EWeaponState::EWS_MAX:
+		break;
+	default:
+		break;
+	}
+}
+
+//通过Character在服务器调用
+void AWeapon::SetWeaponState(EWeaponState NewWeaponState)
+{
+	WeaponState = NewWeaponState;
+	switch (WeaponState)
+	{
+	case EWeaponState::EWS_Initial:
+		break;
+	case EWeaponState::EWS_Equipped:
+		//拾取武器后就不再显示PickupWidget了
+		ShowPickupWidget(false);
+		//武器被拾取后就不再产生碰撞检测了
+		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		break;
+	case EWeaponState::EWS_Dropped:
+		break;
+	case EWeaponState::EWS_MAX:
+		break;
+	default:
+		break;
+	}
+}
+
 void AWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -81,4 +125,11 @@ void AWeapon::ShowPickupWidget(bool bShouldShow)
 	PickupWidget->SetVisibility(bShouldShow);
 }
 
+//注册要复制的变量
+void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AWeapon, WeaponState);
+}
 
