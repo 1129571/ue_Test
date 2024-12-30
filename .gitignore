@@ -77,6 +77,7 @@ DerivedDataCache/*
 
 
 # Content 目录设置忽略
+Content/*
 !Content/Blueprint/*
 !Content/Blueprint/Animations/*
-Content/*
+
