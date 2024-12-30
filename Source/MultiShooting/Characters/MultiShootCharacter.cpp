@@ -9,6 +9,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Weapon/Weapon.h"
 #include "MultiShootComponents/CombatComponent.h"
+#include "Components/CapsuleComponent.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -36,6 +37,10 @@ AMultiShootCharacter::AMultiShootCharacter()
 
 	//设置可以蹲下
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+
+	//防止Block摄像机通道, 导致SpringArm探头变化
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 }
 
 void AMultiShootCharacter::BeginPlay()
@@ -83,9 +88,14 @@ void AMultiShootCharacter::EquipWeaponPressed()
 	if (Combat)
 	{
 		if (HasAuthority())		// 只有服务器可以执行
+		{
 			Combat->EquipWeaponFun(OverlappingWeapon);
+		}
 		else  //客户端 远程调用, 注意这里的函数名没有_Implementation后缀
+		{ 
 			ServerEquipWeapon();
+		}
+
 	}
 }
 

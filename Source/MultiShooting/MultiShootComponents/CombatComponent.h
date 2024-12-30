@@ -28,12 +28,20 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool InbAiming);
 
+	UFUNCTION()
+	void onRep_EquippedWeapon();
+
 private:
 	class AMultiShootCharacter* OwnedCharacter;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = onRep_EquippedWeapon)
 	class AWeapon* EquippedWeapon;
 
 	UPROPERTY(Replicated)
 	bool bIsAiming;
+
+	UPROPERTY(EditAnywhere)
+	float BaseWalkSpeed;
+	UPROPERTY(EditAnywhere)
+	float AimWalkSpeed;	
 };

@@ -8,13 +8,15 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
+	BaseWalkSpeed = 600.f;
+	AimWalkSpeed = 400.f;
 }
-
 
 void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 {
@@ -33,6 +35,10 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 	// 通常用来标识某个 Actor 的控制者或拥有者。
 	// 通过设置所有者，可以方便地管理与该 Actor 相关的逻辑，比如权限、所有权、状态同步等。
 	EquippedWeapon->SetOwner(OwnedCharacter);
+
+	//持有武器时不希望朝向运动方向(此时只发生在服务器, 还需要本地设置)
+	OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+	OwnedCharacter->bUseControllerRotationYaw = true;
 }
 
 void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -46,7 +52,10 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	if (OwnedCharacter)
+	{
+		OwnedCharacter->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+	}
 }
 
 void UCombatComponent::SetAiming(bool InbAiming)
@@ -58,13 +67,28 @@ void UCombatComponent::SetAiming(bool InbAiming)
 		//客户端拥有的Character会执行ServerSetAiming覆盖上一行赋值
 		//具体参考官方文档RPC部分
 		bIsAiming = InbAiming;
+		OwnedCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
 		ServerSetAiming(InbAiming);
 	}
 }
 
 void UCombatComponent::ServerSetAiming_Implementation(bool InbAiming)
 {
-	bIsAiming = InbAiming;
+	if (OwnedCharacter && EquippedWeapon)
+	{
+		bIsAiming = InbAiming;
+		OwnedCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}
+
+void UCombatComponent::onRep_EquippedWeapon()
+{
+ 	if (OwnedCharacter && EquippedWeapon)
+ 	{
+		//持有武器时不希望朝向运动方向(此处是来自服务器的Replicated通知)
+		OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+		OwnedCharacter->bUseControllerRotationYaw = true;
+	}
 }
 
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

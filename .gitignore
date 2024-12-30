@@ -49,9 +49,6 @@ SourceArt/**/*.tga
 Binaries/*
 Plugins/**/Binaries/*
 
-# Content 目录忽略
-Content/*
-
 # Builds
 Build/*
 
@@ -75,3 +72,11 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+
+
+
+# Content 目录设置忽略
+!Content/Blueprint/*
+!Content/Blueprint/Animations/*
+Content/*

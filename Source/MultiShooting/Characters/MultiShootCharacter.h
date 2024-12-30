@@ -49,7 +49,7 @@ private:
 	UPROPERTY(ReplicatedUsing = onRep_OverlappingWeapon)
 	class AWeapon* OverlappingWeapon;
 
-	//定义一个无参无返回值的函数,作为复制变量改变使调用的函数
+	//定义一个无返回值的函数,作为复制变量改变使调用的函数
 	//注意 : 需要在复制变量的使用 UPROPERTY(ReplicatedUsing = 本函数名称) 标记
 	UFUNCTION()
 	void onRep_OverlappingWeapon(AWeapon* LastWeapon);
