@@ -10,6 +10,7 @@
 #include "Weapon/Weapon.h"
 #include "MultiShootComponents/CombatComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -127,6 +128,45 @@ void AMultiShootCharacter::AimReleased()
 	}
 }
 
+void AMultiShootCharacter::AimOffset(float DeltaTime)
+{
+	if (Combat && Combat->EquippedWeapon == nullptr) return;
+	//此函数在Tick调用
+	//我们希望不动时使用Yaw和Pitch的AO, 移动时使用Pitch的AO(因为已经有Lean实现的偏移了, 效果已经比较让人满意)
+	FVector Velocity = GetVelocity();
+	Velocity.Z = 0.f;
+	float Speed = Velocity.Size();
+	bool IsFalling = GetCharacterMovement()->IsFalling();
+	//后 : 静止时使用最后一次存储的初始旋转, 再每帧通过当前的BaseAimRotation计算偏移Yaw值
+	if (Speed == 0.f && !IsFalling)
+	{
+		//GetBaseAimRotation可以理解为GetControllerRotation(一台机器只有一个Controller)的网络版本
+		FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+		FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, StartAimRotation);
+		AO_Yaw = DeltaAimRotation.Yaw;
+		bUseControllerRotationYaw = false;
+	}
+	//先 : 移动 / 掉落时每帧更新当前的BaseAimRotation, 将其作为初始旋转
+	if (Speed > 0.f || IsFalling)
+	{
+		StartAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+		AO_Yaw = 0.f;
+		bUseControllerRotationYaw = true;
+	}
+
+	//在这里, CharacterMovemnetComponent中对Pitch和Yaw进行了压缩, 以便在网络传递
+	//造成的效果是, 将本地的值发送到服务器后限制在了[0~360)
+	AO_Pitch = GetBaseAimRotation().Pitch;
+
+	//修正Pitch, [270, 360)~[-90, 0)
+	if (AO_Pitch > 90.f && !IsLocallyControlled())
+	{
+		FVector2D InRange(270.f, 360.f);
+		FVector2D OutRange(-90.f, 0.f);
+		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
+	}
+}
+
 //客户端远程调用服务器方法
 void AMultiShootCharacter::ServerEquipWeapon_Implementation()
 {
@@ -182,10 +222,17 @@ bool AMultiShootCharacter::IsAiming()
 	return (Combat && Combat->bIsAiming);
 }
 
+AWeapon* AMultiShootCharacter::GetEquippedWeapon()
+{
+	if (Combat == nullptr) return nullptr;
+	return Combat->EquippedWeapon;
+}
+
 void AMultiShootCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	AimOffset(DeltaTime);
 }
 
 void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

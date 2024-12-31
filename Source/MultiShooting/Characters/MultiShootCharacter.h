@@ -31,6 +31,7 @@ protected:
 	void CrouchPressed();
 	void AimPressed();
 	void AimReleased();
+	void AimOffset(float DeltaTime);
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -49,6 +50,10 @@ private:
 	UPROPERTY(ReplicatedUsing = onRep_OverlappingWeapon)
 	class AWeapon* OverlappingWeapon;
 
+	float AO_Yaw;
+	float AO_Pitch;
+	FRotator StartAimRotation;
+
 	//定义一个无返回值的函数,作为复制变量改变使调用的函数
 	//注意 : 需要在复制变量的使用 UPROPERTY(ReplicatedUsing = 本函数名称) 标记
 	UFUNCTION()
@@ -58,9 +63,13 @@ private:
 	// 并且是可靠的调用, 不会因为网络不稳定而丢失
 	UFUNCTION(Server, Reliable)
 	void ServerEquipWeapon();
+
 public:	
 	void SetOverlappingWeapon(AWeapon* InWeapon);
 	bool IsWeaponEquipped();
 	bool IsAiming();
+	AWeapon* GetEquippedWeapon();
 	
+	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
+	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
 };

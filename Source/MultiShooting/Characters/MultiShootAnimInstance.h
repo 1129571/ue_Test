@@ -52,5 +52,19 @@ private:
 
 	FRotator CharacterRotationLastFrame;
 	FRotator CharacterRotationThisFrame;
-	FRotator DeltaRotation;
+	FRotator DeltaRotation;	
+	
+	//驱动瞄准偏移
+	UPROPERTY(BlueprintReadOnly, Category = "AimOffset", meta = (AllowPrivateAccess = "true"))
+	float AO_Yaw;
+
+	UPROPERTY(BlueprintReadOnly, Category = "AimOffset", meta = (AllowPrivateAccess = "true"))
+	float AO_Pitch;
+
+	//进行IK反向运动学解算
+	UPROPERTY(BlueprintReadOnly, Category = "IK", meta = (AllowPrivateAccess = "true"))
+	class AWeapon* EquippedWeapon;
+
+	UPROPERTY(BlueprintReadOnly, Category = "IK", meta = (AllowPrivateAccess = "true"))
+	FTransform LeftHandTransform;
 };

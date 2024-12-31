@@ -5,6 +5,7 @@
 #include "MultiShootCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Weapon/Weapon.h"
 
 void UMultiShootAnimInstance::NativeInitializeAnimation()
 {
@@ -38,6 +39,8 @@ void UMultiShootAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 	bIsAiming = MultiShootCharacter->IsAiming();
 
+	EquippedWeapon = MultiShootCharacter->GetEquippedWeapon();
+
 	//获取到Pawn的基础旋转(鼠标旋转可以观察Pawn), 表示 [玩家] 正在看的方向
 	// 是类似世界坐标的全局旋转, 像东南西北一样有固定方向
 	FRotator AimRotation = MultiShootCharacter->GetBaseAimRotation();
@@ -57,4 +60,21 @@ void UMultiShootAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	const float Target = Delta.Yaw / DeltaTime;
 	const float Interp = FMath::FInterpTo(Lean, Target, DeltaTime, 6.f);
 	Lean = FMath::Clamp(Interp, -90.f, 90.f);
+
+	AO_Yaw = MultiShootCharacter->GetAO_Yaw();
+	AO_Pitch = MultiShootCharacter->GetAO_Pitch();
+
+	//CharacterMesh---WeaponMesh之间进行IK绑定
+	if (bWeaponEquipped && EquippedWeapon && EquippedWeapon->GetWeaponMesh() && MultiShootCharacter->GetMesh())
+	{
+		//获取武器Mesh上Socket(通过命名获取)的世界变换
+		LeftHandTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), ERelativeTransformSpace::RTS_World);
+		//计算Socket变换在目标(Character)骨骼空间上的位置和旋转
+		FVector OutPosition;
+		FRotator OutRotation;
+		//这里使用hand_r作为参考骨骼是因为我们将武器附加到这个骨骼的, 它和武器之间相对位置是不会变的
+		MultiShootCharacter->GetMesh()->TransformToBoneSpace(FName("hand_r"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
+		LeftHandTransform.SetLocation(OutPosition);
+		LeftHandTransform.SetRotation(FQuat(OutRotation));
+	}
 }
