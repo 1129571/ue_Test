@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "MultiShootTypes/TurningInPlace.h"
 #include "MultiShootCharacter.generated.h"
 
 UCLASS()
@@ -51,8 +52,13 @@ private:
 	class AWeapon* OverlappingWeapon;
 
 	float AO_Yaw;
+	float InterpAO_Yaw;
 	float AO_Pitch;
 	FRotator StartAimRotation;
+
+	//用于在AimOffset(-90, 90)超出时原地转身
+	ETurningInPlace TurningInPlace;
+	void TurnInPlaceFun(float DeltaTime);
 
 	//定义一个无返回值的函数,作为复制变量改变使调用的函数
 	//注意 : 需要在复制变量的使用 UPROPERTY(ReplicatedUsing = 本函数名称) 标记
@@ -72,4 +78,5 @@ public:
 	
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
+	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 };

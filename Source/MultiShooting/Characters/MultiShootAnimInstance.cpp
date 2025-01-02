@@ -41,6 +41,8 @@ void UMultiShootAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 	EquippedWeapon = MultiShootCharacter->GetEquippedWeapon();
 
+	TurningInPlace = MultiShootCharacter->GetTurningInPlace();
+
 	//获取到Pawn的基础旋转(鼠标旋转可以观察Pawn), 表示 [玩家] 正在看的方向
 	// 是类似世界坐标的全局旋转, 像东南西北一样有固定方向
 	FRotator AimRotation = MultiShootCharacter->GetBaseAimRotation();

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "MultiShootTypes/TurningInPlace.h"
 #include "MultiShootAnimInstance.generated.h"
 
 /**
@@ -67,4 +68,8 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Category = "IK", meta = (AllowPrivateAccess = "true"))
 	FTransform LeftHandTransform;
+
+	//AimOffset我们希望只在-90,90使用, 超出时自动转身
+	UPROPERTY(BlueprintReadOnly, Category = "TurningInPlace", meta = (AllowPrivateAccess = "true"))
+	ETurningInPlace TurningInPlace;
 };

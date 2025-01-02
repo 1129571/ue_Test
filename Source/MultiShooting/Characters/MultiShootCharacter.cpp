@@ -42,6 +42,8 @@ AMultiShootCharacter::AMultiShootCharacter()
 	//防止Block摄像机通道, 导致SpringArm探头变化
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
+	TurningInPlace = ETurningInPlace::ETIP_NoTurning;
 }
 
 void AMultiShootCharacter::BeginPlay()
@@ -144,7 +146,13 @@ void AMultiShootCharacter::AimOffset(float DeltaTime)
 		FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, StartAimRotation);
 		AO_Yaw = DeltaAimRotation.Yaw;
-		bUseControllerRotationYaw = false;
+		if (TurningInPlace == ETurningInPlace::ETIP_NoTurning)
+		{
+			InterpAO_Yaw = AO_Yaw;
+		}
+		//我们希望Character的Yaw在[-90, 90]之外进行一次Yaw的90度旋转, 其余时间使用AimOffset
+		bUseControllerRotationYaw = true;		//通过动画蓝图Rotate Root Bone 节点替代
+		TurnInPlaceFun(DeltaTime);
 	}
 	//先 : 移动 / 掉落时每帧更新当前的BaseAimRotation, 将其作为初始旋转
 	if (Speed > 0.f || IsFalling)
@@ -152,6 +160,7 @@ void AMultiShootCharacter::AimOffset(float DeltaTime)
 		StartAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		AO_Yaw = 0.f;
 		bUseControllerRotationYaw = true;
+		TurningInPlace = ETurningInPlace::ETIP_NoTurning;
 	}
 
 	//在这里, CharacterMovemnetComponent中对Pitch和Yaw进行了压缩, 以便在网络传递
@@ -164,6 +173,28 @@ void AMultiShootCharacter::AimOffset(float DeltaTime)
 		FVector2D InRange(270.f, 360.f);
 		FVector2D OutRange(-90.f, 0.f);
 		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
+	}
+}
+
+void AMultiShootCharacter::TurnInPlaceFun(float DeltaTime)
+{
+	if (AO_Yaw < -90.f)
+	{
+		TurningInPlace = ETurningInPlace::ETIP_Left;
+	}
+	else if (AO_Yaw > 90.f)
+	{
+		TurningInPlace = ETurningInPlace::ETIP_Right;
+	}
+	if (TurningInPlace != ETurningInPlace::ETIP_NoTurning)
+	{
+		InterpAO_Yaw = FMath::FInterpTo(InterpAO_Yaw, 0.f, DeltaTime, 4.f);
+		AO_Yaw = InterpAO_Yaw;
+		if (FMath::Abs(AO_Yaw) < 15.f)
+		{
+			TurningInPlace = ETurningInPlace::ETIP_NoTurning;
+			StartAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+		}
 	}
 }
 
