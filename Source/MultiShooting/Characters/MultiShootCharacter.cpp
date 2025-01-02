@@ -38,12 +38,18 @@ AMultiShootCharacter::AMultiShootCharacter()
 
 	//设置可以蹲下
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	//设置旋转速度(旋转朝向运动)
+	GetCharacterMovement()->RotationRate = FRotator(0.f,850.f, 0.f);
 
 	//防止Block摄像机通道, 导致SpringArm探头变化
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
 	TurningInPlace = ETurningInPlace::ETIP_NoTurning;
+
+	//设置网络更新频率, 快节奏射击游戏中常被设置为33 66
+	NetUpdateFrequency = 66.f;
+	MinNetUpdateFrequency = 33.f;
 }
 
 void AMultiShootCharacter::BeginPlay()
@@ -176,6 +182,19 @@ void AMultiShootCharacter::AimOffset(float DeltaTime)
 	}
 }
 
+void AMultiShootCharacter::Jump()
+{
+	//覆写jump方法, 我们希望在蹲下jump时是站起来
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Super::Jump();
+	}
+}
+
 void AMultiShootCharacter::TurnInPlaceFun(float DeltaTime)
 {
 	if (AO_Yaw < -90.f)
@@ -190,6 +209,7 @@ void AMultiShootCharacter::TurnInPlaceFun(float DeltaTime)
 	{
 		InterpAO_Yaw = FMath::FInterpTo(InterpAO_Yaw, 0.f, DeltaTime, 4.f);
 		AO_Yaw = InterpAO_Yaw;
+		//转到位了
 		if (FMath::Abs(AO_Yaw) < 15.f)
 		{
 			TurningInPlace = ETurningInPlace::ETIP_NoTurning;
@@ -270,7 +290,7 @@ void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ThisClass::Jump);
 	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &ThisClass::EquipWeaponPressed);
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ThisClass::CrouchPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ThisClass::AimPressed);
