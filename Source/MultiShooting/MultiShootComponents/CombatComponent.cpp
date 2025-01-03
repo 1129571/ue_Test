@@ -91,6 +91,15 @@ void UCombatComponent::onRep_EquippedWeapon()
 	}
 }
 
+void UCombatComponent::WeaponFire(bool bFire)
+{
+	bFireState = bFire;
+	if (OwnedCharacter && bFireState)
+	{
+		OwnedCharacter->PlayFireMontage(bIsAiming);
+	}
+}
+
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);

@@ -31,6 +31,8 @@ protected:
 	UFUNCTION()
 	void onRep_EquippedWeapon();
 
+	void WeaponFire(bool bFire);
+
 private:
 	class AMultiShootCharacter* OwnedCharacter;
 
@@ -44,4 +46,6 @@ private:
 	float BaseWalkSpeed;
 	UPROPERTY(EditAnywhere)
 	float AimWalkSpeed;	
+
+	bool bFireState = false;
 };

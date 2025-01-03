@@ -21,6 +21,7 @@ public:
 	//在所有组件被初始化并且基本属性设置好后调用. 构造之后, BeginPlay之前
 	virtual void PostInitializeComponents() override;
 
+	void PlayFireMontage(bool bAiming);
 protected:
 	virtual void BeginPlay() override;
 
@@ -32,6 +33,8 @@ protected:
 	void CrouchPressed();
 	void AimPressed();
 	void AimReleased();
+	void FirePressed();
+	void FireReleased();
 	void AimOffset(float DeltaTime);
 	virtual void Jump() override;
 
@@ -56,6 +59,9 @@ private:
 	float InterpAO_Yaw;
 	float AO_Pitch;
 	FRotator StartAimRotation;
+
+	UPROPERTY(EditAnywhere, Category=Combat)
+	class UAnimMontage* WeaponFireMontage;
 
 	//用于在AimOffset(-90, 90)超出时原地转身
 	ETurningInPlace TurningInPlace;

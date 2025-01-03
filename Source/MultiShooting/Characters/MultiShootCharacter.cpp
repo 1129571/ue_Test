@@ -11,6 +11,7 @@
 #include "MultiShootComponents/CombatComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "MultiShootAnimInstance.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -133,6 +134,22 @@ void AMultiShootCharacter::AimReleased()
 	if (Combat)
 	{	
 		Combat->SetAiming(false);
+	}
+}
+
+void AMultiShootCharacter::FirePressed()
+{
+	if (Combat)
+	{
+		Combat->WeaponFire(true);
+	}
+}
+
+void AMultiShootCharacter::FireReleased()
+{
+	if (Combat)
+	{
+		Combat->WeaponFire(false);
 	}
 }
 
@@ -295,6 +312,8 @@ void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ThisClass::CrouchPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ThisClass::AimPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &ThisClass::AimReleased);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ThisClass::FirePressed);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ThisClass::FireReleased);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ThisClass::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ThisClass::MoveRight);
@@ -322,6 +341,20 @@ void AMultiShootCharacter::PostInitializeComponents()
 	if (Combat)
 	{
 		Combat->OwnedCharacter = this;
+	}
+}
+
+void AMultiShootCharacter::PlayFireMontage(bool bAiming)
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+	
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && WeaponFireMontage)
+	{
+		AnimInstance->Montage_Play(WeaponFireMontage);
+		FName SectionName;		//我们的Montage有两个Section, Hip和Aim部分
+		SectionName = bAiming ? FName("RifleAim") : FName("RifleHip");
+		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }
 
