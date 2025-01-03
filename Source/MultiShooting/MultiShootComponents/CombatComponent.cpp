@@ -93,10 +93,14 @@ void UCombatComponent::onRep_EquippedWeapon()
 
 void UCombatComponent::WeaponFire(bool bFire)
 {
+	if (EquippedWeapon == nullptr) return;
 	bFireState = bFire;
+
 	if (OwnedCharacter && bFireState)
 	{
+		//Character和Weapon各自处理开火逻辑
 		OwnedCharacter->PlayFireMontage(bIsAiming);
+		EquippedWeapon->Fire();
 	}
 }
 
