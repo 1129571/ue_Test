@@ -33,6 +33,12 @@ protected:
 
 	void WeaponFire(bool bFire);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MultiCastFire();
+
+	UFUNCTION(Server, Reliable)
+	void ServerFire();
+
 private:
 	class AMultiShootCharacter* OwnedCharacter;
 

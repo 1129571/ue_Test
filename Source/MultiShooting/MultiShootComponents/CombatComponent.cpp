@@ -91,12 +91,28 @@ void UCombatComponent::onRep_EquippedWeapon()
 	}
 }
 
+//本地机器执行
 void UCombatComponent::WeaponFire(bool bFire)
 {
-	if (EquippedWeapon == nullptr) return;
 	bFireState = bFire;
 
-	if (OwnedCharacter && bFireState)
+	//本地机器ServerRpc---服务器MulticaseRpc--->所有客户端
+	if (bFireState)
+	{
+		ServerFire();
+	}
+}
+
+//服务器执行
+void UCombatComponent::ServerFire_Implementation()
+{
+	MultiCastFire();
+}
+
+//所有客户端执行
+void UCombatComponent::MultiCastFire_Implementation()
+{
+	if (OwnedCharacter && EquippedWeapon)
 	{
 		//Character和Weapon各自处理开火逻辑
 		OwnedCharacter->PlayFireMontage(bIsAiming);
