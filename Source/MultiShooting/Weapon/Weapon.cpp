@@ -8,6 +8,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimationAsset.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Casing.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 AWeapon::AWeapon()
 {
@@ -140,6 +142,25 @@ void AWeapon::Fire(const FVector& HitTarget)
 	if (FireAnimation)
 	{
 		WeaponMesh->PlayAnimation(FireAnimation, false);
+	}
+	if (CasingClass)
+	{
+		const USkeletalMeshSocket* CasingSocket = WeaponMesh->GetSocketByName(FName("AmmoEject"));
+		if (CasingSocket)
+		{
+			FTransform SocketTransfrom = CasingSocket->GetSocketTransform(WeaponMesh);
+
+			//仅视觉效果, 和伤害系统无关, 因此可以不用设置Owner等属性
+			UWorld* World = GetWorld();
+			if (World)
+			{
+				World->SpawnActor<ACasing>(
+					CasingClass,
+					SocketTransfrom.GetLocation(),
+					SocketTransfrom.GetRotation().Rotator()
+				);
+			}
+		}
 	}
 }
 
