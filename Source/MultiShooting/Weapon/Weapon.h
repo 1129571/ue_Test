@@ -30,7 +30,9 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	void Fire();
+	// 只有Virtual函数才可以被重写
+	// 非虚拟函数会被子类同名函数隐藏, 编译器调用哪个取决于声明的指针或引用类型.
+	virtual void Fire(const FVector& HitTarget);
 
 protected:
 	virtual void BeginPlay() override;

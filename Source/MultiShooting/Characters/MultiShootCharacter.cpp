@@ -19,9 +19,10 @@ AMultiShootCharacter::AMultiShootCharacter()
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());			//不设置到胶囊组件是因为防止下蹲时相机Z轴移动
-	CameraBoom->TargetArmLength = 600.f;
+	CameraBoom->TargetArmLength = 350.f;
 	CameraBoom->bUsePawnControlRotation = true;		//鼠标输入作用于控制器时弹簧臂也会旋转
 	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 160.f));
+	CameraBoom->SocketOffset = FVector(0.f, 75.f, 75.f);
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);

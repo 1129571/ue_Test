@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "CombatComponent.generated.h"
 
+#define TRACE_LENGTH 80000
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MULTISHOOTING_API UCombatComponent : public UActorComponent
@@ -39,6 +41,8 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerFire();
 
+	void TraceUnderCrosshairs(FHitResult& TraceResult);
+
 private:
 	class AMultiShootCharacter* OwnedCharacter;
 
@@ -54,4 +58,6 @@ private:
 	float AimWalkSpeed;	
 
 	bool bFireState = false;
+
+	FVector HitTarget;
 };

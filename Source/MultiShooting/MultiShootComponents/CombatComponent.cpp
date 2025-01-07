@@ -9,10 +9,12 @@
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "DrawDebugHelpers.h"
 
 UCombatComponent::UCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 
 	BaseWalkSpeed = 600.f;
 	AimWalkSpeed = 400.f;
@@ -109,6 +111,60 @@ void UCombatComponent::ServerFire_Implementation()
 	MultiCastFire();
 }
 
+void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceResult)
+{
+	//从屏幕中心发射射线检测
+	FVector2D ViewportSize;
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+	}
+
+	//或视口中心FVector2D, 将2D屏幕空间坐标转换为3D世界空间坐标
+	FVector2D CrosshairLocation = ViewportSize / 2.f;
+	FVector CrosshairWorldPosition;
+	FVector CrosshairWorldDirection;
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+		UGameplayStatics::GetPlayerController(this, 0),
+		CrosshairLocation,
+		CrosshairWorldPosition,
+		CrosshairWorldDirection
+	);
+
+	if (bScreenToWorld)
+	{
+		FVector Start = CrosshairWorldPosition;
+
+		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
+
+		GetWorld()->LineTraceSingleByChannel(
+			TraceResult,
+			Start,
+			End,
+			ECollisionChannel::ECC_Visibility
+		);
+
+		//转换失败, 就将子弹目标点设置为射线终点
+		if (!TraceResult.bBlockingHit)
+		{
+			TraceResult.ImpactPoint = End;
+			HitTarget = End;
+		}
+		else
+		{
+			HitTarget = TraceResult.ImpactPoint;
+			//绘制调试球体在射线击中的点, 便于Debug
+			DrawDebugSphere(
+				GetWorld(),
+				TraceResult.ImpactPoint,
+				12.f,
+				12,
+				FColor::Green
+			);
+		}
+	}
+}
+
 //所有客户端执行
 void UCombatComponent::MultiCastFire_Implementation()
 {
@@ -116,7 +172,7 @@ void UCombatComponent::MultiCastFire_Implementation()
 	{
 		//Character和Weapon各自处理开火逻辑
 		OwnedCharacter->PlayFireMontage(bIsAiming);
-		EquippedWeapon->Fire();
+		EquippedWeapon->Fire(HitTarget);
 	}
 }
 
@@ -124,5 +180,7 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	FHitResult TraceResult;
+	TraceUnderCrosshairs(TraceResult);
 }
 

@@ -7,11 +7,17 @@
 #include "ProjectileWeapon.generated.h"
 
 /**
- * 拥有子弹发射器  的武器基类
+ * 拥有子弹的武器基类
  */
 UCLASS()
 class MULTISHOOTING_API AProjectileWeapon : public AWeapon
 {
 	GENERATED_BODY()
+
+public:
+	virtual void Fire(const FVector& HitTarget) override;
 	
+private:
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AProjectile> ProjectileClass;
 };
