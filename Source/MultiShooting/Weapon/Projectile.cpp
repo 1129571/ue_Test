@@ -5,11 +5,15 @@
 #include "Components/SceneComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Particles/ParticleSystem.h"
 
 AProjectile::AProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	bReplicates = true;
 
 	// 发射物的根组件必须支持碰撞。通常，发射物的根组件应该是一个带碰撞的组件，例如Sphere Component或Capsule Component，而不是Scene Component。
 //	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
@@ -34,7 +38,17 @@ AProjectile::AProjectile()
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	if (Tracer)
+	{
+		TracerComponent = UGameplayStatics::SpawnEmitterAttached(
+			Tracer,
+			CollisionBox,
+			FName(),
+			GetActorLocation(),
+			GetActorRotation(),
+			EAttachLocation::KeepWorldPosition
+		);
+	}
 }
 
 void AProjectile::Tick(float DeltaTime)

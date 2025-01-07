@@ -8,6 +8,10 @@
 void AProjectileWeapon::Fire(const FVector& HitTarget)
 {
 	Super::Fire(HitTarget);
+
+	//仅希望在服务器生成子弹, 并通过Replicate将其复制到客户端
+	if (!HasAuthority()) return;
+
 	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
 	//生成子弹, Mesh 资产上已经有名为"MuzzleFlash"的Socket, 并且它的方向是正确的(X 轴向前)
 	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName(FName("MuzzleFlash"));
