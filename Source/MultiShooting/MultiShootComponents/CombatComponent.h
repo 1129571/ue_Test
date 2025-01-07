@@ -36,10 +36,10 @@ protected:
 	void WeaponFire(bool bFire);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MultiCastFire();
+	void MultiCastFire(const FVector_NetQuantize& InHitTarget);
 
 	UFUNCTION(Server, Reliable)
-	void ServerFire();
+	void ServerFire(const FVector_NetQuantize& InHitTarget);
 
 	void TraceUnderCrosshairs(FHitResult& TraceResult);
 
@@ -59,5 +59,4 @@ private:
 
 	bool bFireState = false;
 
-	FVector HitTarget;
 };

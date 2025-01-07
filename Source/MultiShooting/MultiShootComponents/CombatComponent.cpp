@@ -101,14 +101,28 @@ void UCombatComponent::WeaponFire(bool bFire)
 	//本地机器ServerRpc---服务器MulticaseRpc--->所有客户端
 	if (bFireState)
 	{
-		ServerFire();
+		FHitResult TraceResult;
+		TraceUnderCrosshairs(TraceResult);
+		//TraceResult.ImpactPoint已经是FVector_NetQuantize类型了
+		ServerFire(TraceResult.ImpactPoint);
 	}
 }
 
 //服务器执行
-void UCombatComponent::ServerFire_Implementation()
+void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& InHitTarget)
 {
-	MultiCastFire();
+	MultiCastFire(InHitTarget);
+}
+
+//所有客户端执行
+void UCombatComponent::MultiCastFire_Implementation(const FVector_NetQuantize& InHitTarget)
+{
+	if (OwnedCharacter && EquippedWeapon)
+	{
+		//Character和Weapon各自处理开火逻辑
+		OwnedCharacter->PlayFireMontage(bIsAiming);
+		EquippedWeapon->Fire(InHitTarget);
+	}
 }
 
 void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceResult)
@@ -148,39 +162,23 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceResult)
 		if (!TraceResult.bBlockingHit)
 		{
 			TraceResult.ImpactPoint = End;
-			HitTarget = End;
 		}
 		else
 		{
-			HitTarget = TraceResult.ImpactPoint;
 			//绘制调试球体在射线击中的点, 便于Debug
-			DrawDebugSphere(
-				GetWorld(),
-				TraceResult.ImpactPoint,
-				12.f,
-				12,
-				FColor::Green
-			);
+// 			DrawDebugSphere(
+// 				GetWorld(),
+// 				TraceResult.ImpactPoint,
+// 				12.f,
+// 				12,
+// 				FColor::Green
+// 			);
 		}
-	}
-}
-
-//所有客户端执行
-void UCombatComponent::MultiCastFire_Implementation()
-{
-	if (OwnedCharacter && EquippedWeapon)
-	{
-		//Character和Weapon各自处理开火逻辑
-		OwnedCharacter->PlayFireMontage(bIsAiming);
-		EquippedWeapon->Fire(HitTarget);
 	}
 }
 
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	FHitResult TraceResult;
-	TraceUnderCrosshairs(TraceResult);
 }
 
