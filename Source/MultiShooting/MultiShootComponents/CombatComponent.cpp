@@ -10,7 +10,6 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "DrawDebugHelpers.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -162,17 +161,6 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceResult)
 		if (!TraceResult.bBlockingHit)
 		{
 			TraceResult.ImpactPoint = End;
-		}
-		else
-		{
-			//绘制调试球体在射线击中的点, 便于Debug
-// 			DrawDebugSphere(
-// 				GetWorld(),
-// 				TraceResult.ImpactPoint,
-// 				12.f,
-// 				12,
-// 				FColor::Green
-// 			);
 		}
 	}
 }
