@@ -10,6 +10,8 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "PlayerController/MultiShootPlayerController.h"
+#include "HUD/MultiShootHUD.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -165,8 +167,42 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceResult)
 	}
 }
 
+void UCombatComponent::SetHUDCrossHairs(float DeltaTime)
+{
+	if (!OwnedCharacter || OwnedCharacter->Controller == nullptr) return;
+
+	Controller = Controller == nullptr ? Cast<AMultiShootPlayerController>(OwnedCharacter->Controller) : Controller;
+
+	if (Controller)
+	{
+		HUD = HUD == nullptr ? Cast<AMultiShootHUD>(Controller->GetHUD()) : HUD;
+		if (HUD)
+		{
+			FHUDPackage HUDPackage;
+			if (EquippedWeapon)
+			{
+				HUDPackage.CrosshairCenter = EquippedWeapon->CrosshairCenter;
+				HUDPackage.CrosshairLeft = EquippedWeapon->CrosshairLeft;
+				HUDPackage.CrosshairRight = EquippedWeapon->CrosshairRight;
+				HUDPackage.CrosshairTop = EquippedWeapon->CrosshairTop;
+				HUDPackage.CrosshairBottom = EquippedWeapon->CrosshairBottom;
+			}
+			else
+			{
+				HUDPackage.CrosshairCenter = nullptr;
+				HUDPackage.CrosshairLeft = nullptr;
+				HUDPackage.CrosshairRight = nullptr;
+				HUDPackage.CrosshairTop = nullptr;
+				HUDPackage.CrosshairBottom = nullptr;
+			}
+			HUD->SetHUDPackage(HUDPackage);
+		}
+	}
+}
+
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	SetHUDCrossHairs(DeltaTime);
 }
 

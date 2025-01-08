@@ -41,10 +41,15 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerFire(const FVector_NetQuantize& InHitTarget);
 
+	//命中目标点预测
 	void TraceUnderCrosshairs(FHitResult& TraceResult);
+
+	void SetHUDCrossHairs(float DeltaTime);
 
 private:
 	class AMultiShootCharacter* OwnedCharacter;
+	class AMultiShootPlayerController* Controller;
+	class AMultiShootHUD* HUD;
 
 	UPROPERTY(ReplicatedUsing = onRep_EquippedWeapon)
 	class AWeapon* EquippedWeapon;
