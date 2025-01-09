@@ -12,6 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "PlayerController/MultiShootPlayerController.h"
 #include "HUD/MultiShootHUD.h"
+#include "Camera/CameraComponent.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -58,6 +59,12 @@ void UCombatComponent::BeginPlay()
 	if (OwnedCharacter)
 	{
 		OwnedCharacter->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+
+		if (OwnedCharacter->GetFollowCamera())
+		{
+			DefaultFOV = OwnedCharacter->GetFollowCamera()->FieldOfView;
+			CurrnetFOV = DefaultFOV;
+		}
 	}
 }
 
@@ -220,16 +227,41 @@ void UCombatComponent::SetHUDCrossHairs(float DeltaTime)
 	}
 }
 
+void UCombatComponent::InterpFOV(float DeltaTime)
+{
+	if (EquippedWeapon == nullptr) return;
+
+	if (bIsAiming)
+	{
+		CurrnetFOV = FMath::FInterpTo(CurrnetFOV, EquippedWeapon->GetWeaponZoomedFOV(), DeltaTime, EquippedWeapon->GetWeaponZoomInterpSpeed());
+	}
+	else
+	{
+		CurrnetFOV = FMath::FInterpTo(CurrnetFOV, DefaultFOV, DeltaTime, ZoomInterpSpeed);
+	}
+
+	if (OwnedCharacter && OwnedCharacter->GetFollowCamera())
+	{
+		OwnedCharacter->GetFollowCamera()->SetFieldOfView(CurrnetFOV);
+	}
+}
+
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	SetHUDCrossHairs(DeltaTime);
 
+	// 仅本地控制的角色需要执行(提高沉浸式, 避免资源浪费)
 	if (OwnedCharacter && OwnedCharacter->IsLocallyControlled())
 	{
 		FHitResult HitResult;
 		TraceUnderCrosshairs(HitResult);
 		HitTarget = HitResult.ImpactPoint;
+		//HUD更新
+		SetHUDCrossHairs(DeltaTime);
+
+		//FOV更新
+		InterpFOV(DeltaTime);
 	}
+
 }
 

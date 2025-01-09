@@ -93,8 +93,16 @@ private:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ACasing> CasingClass;
 
+	//Aiming时对FOV进行放大
+	UPROPERTY(EditAnywhere)
+	float ZoomedFOV = 30.f;
+	UPROPERTY(EditAnywhere)
+	float ZoomInterpSpeed = 20.f;		//该武器的开镜速度
+
 public:
 	void SetWeaponState(EWeaponState NewWeaponState);
 	FORCEINLINE class USphereComponent* GetAreaSphere() const { return AreaSphere; }
 	FORCEINLINE class USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
+	FORCEINLINE float GetWeaponZoomedFOV() const { return ZoomedFOV; }
+	FORCEINLINE float GetWeaponZoomInterpSpeed() const { return ZoomInterpSpeed; }
 };

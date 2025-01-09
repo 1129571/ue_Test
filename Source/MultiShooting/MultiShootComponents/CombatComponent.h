@@ -64,8 +64,19 @@ private:
 
 	bool bFireState = false;
 
+	/* HUD 准星*/
 	float CrosshairVelocityFactor;			//准星散开的速度因子
 	float CrosshairInAirFactor;				//准星散开的坠落因子
 
 	FVector HitTarget;
+
+	/* FOV */
+	float DefaultFOV;
+	UPROPERTY(EditAnywhere, Category = Combat)
+	float ZoomedFOV = 30.f;
+	UPROPERTY(EditAnywhere, Category = Combat)
+	float ZoomInterpSpeed = 20.f;		//fov 回归正常的速度, 这里我认为他和武器无关
+	float CurrnetFOV;
+
+	void InterpFOV(float DeltaTime);
 };
