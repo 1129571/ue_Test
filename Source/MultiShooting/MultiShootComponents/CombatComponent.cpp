@@ -141,14 +141,14 @@ void UCombatComponent::MultiCastFire_Implementation(const FVector_NetQuantize& I
 
 void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceResult)
 {
-	//从屏幕中心发射射线检测
+	//从屏幕中心发射射线检测.
 	FVector2D ViewportSize;
 	if (GEngine && GEngine->GameViewport)
 	{
 		GEngine->GameViewport->GetViewportSize(ViewportSize);
 	}
 
-	//或视口中心FVector2D, 将2D屏幕空间坐标转换为3D世界空间坐标
+	// 或视口中心FVector2D, 将2D屏幕空间坐标转换为3D世界空间坐标
 	FVector2D CrosshairLocation = ViewportSize / 2.f;
 	FVector CrosshairWorldPosition;
 	FVector CrosshairWorldDirection;
@@ -162,6 +162,15 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceResult)
 	if (bScreenToWorld)
 	{
 		FVector Start = CrosshairWorldPosition;
+
+		// 直接用会有BUG: 实际检测位置是在 屏幕场景位置--控制的Character之间, 
+		// 这就会将我们自己的角色或者Chracter身后的角色检测到, 这不合理
+		// 解决办法是将射线检测的起点移动至我们的角色身体前侧
+		if (OwnedCharacter)
+		{
+			float DistanceToCharacter = (OwnedCharacter->GetActorLocation() - Start).Size();
+			Start += CrosshairWorldDirection * (DistanceToCharacter + 30.f);
+		}
 
 		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
 

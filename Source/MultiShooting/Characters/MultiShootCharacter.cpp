@@ -259,6 +259,29 @@ void AMultiShootCharacter::onRep_OverlappingWeapon(AWeapon* LastWeapon)
 	}
 }
 
+void AMultiShootCharacter::HideCameraIfCharacterClose()
+{
+	if (!IsLocallyControlled()) return;
+	if( (FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold)
+	{
+		GetMesh()->SetVisibility(false);
+		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
+		{
+			//没有区别
+			//Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;
+			Combat->EquippedWeapon->GetWeaponMesh()->SetVisibility(false);
+		}
+	}
+	else {
+		GetMesh()->SetVisibility(true);
+		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
+		{
+			//Combat->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;
+			Combat->EquippedWeapon->GetWeaponMesh()->SetVisibility(true);
+		}
+	}
+}
+
 void AMultiShootCharacter::SetOverlappingWeapon(AWeapon* InWeapon)
 {
 	if (IsLocallyControlled())
@@ -310,6 +333,8 @@ void AMultiShootCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	AimOffset(DeltaTime);
+
+	HideCameraIfCharacterClose();
 }
 
 void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

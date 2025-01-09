@@ -78,6 +78,11 @@ private:
 	UFUNCTION(Server, Reliable)
 	void ServerEquipWeapon();
 
+	//角色距离摄像机太近时, 将其隐藏(该行为只是为了本地玩家视觉效果, 因此只发生在本地机器)
+	void HideCameraIfCharacterClose();
+	UPROPERTY(EditAnywhere)
+	float CameraThreshold = 200.f;
+
 public:	
 	void SetOverlappingWeapon(AWeapon* InWeapon);
 	bool IsWeaponEquipped();
