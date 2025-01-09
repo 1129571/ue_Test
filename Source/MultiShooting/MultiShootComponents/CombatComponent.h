@@ -67,6 +67,8 @@ private:
 	/* HUD 准星*/
 	float CrosshairVelocityFactor;			//准星散开的速度因子
 	float CrosshairInAirFactor;				//准星散开的坠落因子
+	float CrosshairAimFactor;				//准星散开的瞄准因子
+	float CrosshairShootingFactor;			//准星散开的射击因子
 
 	FVector HitTarget;
 
@@ -75,7 +77,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = Combat)
 	float ZoomedFOV = 30.f;
 	UPROPERTY(EditAnywhere, Category = Combat)
-	float ZoomInterpSpeed = 20.f;		//fov 回归正常的速度, 这里我认为他和武器无关
+	float ZoomInterpSpeed = 20.f;		// FOV 回归正常的速度, 这里我认为他和武器无关
 	float CurrnetFOV;
 
 	void InterpFOV(float DeltaTime);

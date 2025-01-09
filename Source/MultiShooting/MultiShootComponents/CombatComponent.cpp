@@ -113,6 +113,12 @@ void UCombatComponent::WeaponFire(bool bFire)
 		TraceUnderCrosshairs(TraceResult);
 		//TraceResult.ImpactPoint已经是FVector_NetQuantize类型了
 		ServerFire(TraceResult.ImpactPoint);
+
+		//开火时本地机器增加射击因子(用于HUD)
+		if (EquippedWeapon)
+		{
+			CrosshairShootingFactor = 2.f;
+		}
 	}
 }
 
@@ -219,8 +225,26 @@ void UCombatComponent::SetHUDCrossHairs(float DeltaTime)
 			{
 				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
 			}
-			//效果: 速度大时准星散开, 同时如果IsFalling会散开更大
-			HUDPackage.CrosshairSpreadScale = CrosshairVelocityFactor + CrosshairInAirFactor;
+
+			if (bIsAiming)
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.58f, DeltaTime, 30.f);
+			}
+			else
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.f, DeltaTime, 30.f);
+			}
+
+			//射击动作是瞬时的, 所以射击因子在开火时增加, 同时也在Tick降低至0
+			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaTime, 30.f);
+
+			//准星上下左右距离中心的距离
+			HUDPackage.CrosshairSpreadScale =
+				0.6f								//基础的距离
+				+ CrosshairVelocityFactor			//速度因子--散开
+				+ CrosshairInAirFactor				//坠落因子--散开
+				- CrosshairAimFactor				//瞄准因子--聚拢
+				+ CrosshairShootingFactor;			//射击因子--散开
 
 			HUD->SetHUDPackage(HUDPackage);
 		}
