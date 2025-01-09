@@ -297,6 +297,12 @@ AWeapon* AMultiShootCharacter::GetEquippedWeapon()
 	return Combat->EquippedWeapon;
 }
 
+FVector AMultiShootCharacter::GetHitTarget() const
+{
+	if (Combat == nullptr) return FVector();
+	return Combat->HitTarget;
+}
+
 void AMultiShootCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);

@@ -78,5 +78,14 @@ void UMultiShootAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		MultiShootCharacter->GetMesh()->TransformToBoneSpace(FName("hand_r"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
 		LeftHandTransform.SetLocation(OutPosition);
 		LeftHandTransform.SetRotation(FQuat(OutRotation));
+
+		/*射击射击目标(屏幕中心射出)和动画(枪口射出)差距过大, 希望通过持枪手的动画修正*/
+		if (MultiShootCharacter->IsLocallyControlled())		// 只是美观, 非自己控制的角色没有必要计算
+		{
+			bLocallyControlled = true;
+			FTransform RightHandTransform = MultiShootCharacter->GetMesh()->GetSocketTransform(FName("Hand_R"), ERelativeTransformSpace::RTS_World);
+			RightHandRotation = UKismetMathLibrary::FindLookAtRotation(MultiShootCharacter->GetHitTarget(), RightHandTransform.GetLocation());
+		}
+
 	}
 }

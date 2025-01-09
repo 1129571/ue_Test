@@ -72,4 +72,11 @@ private:
 	//AimOffset我们希望只在-90,90使用, 超出时自动转身
 	UPROPERTY(BlueprintReadOnly, Category = "TurningInPlace", meta = (AllowPrivateAccess = "true"))
 	ETurningInPlace TurningInPlace;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Fix Hands", meta = (AllowPrivateAccess = "true"))
+	FRotator RightHandRotation;
+
+	//不能直接在动画蓝图调用 Character->IsLocallyControlled(), 因为它不是线程安全的, 而动画蓝图在非主线程运行
+	UPROPERTY(BlueprintReadOnly, Category = "Fix Hands", meta = (AllowPrivateAccess = "true"))
+	bool bLocallyControlled;
 };
