@@ -13,39 +13,46 @@ void AMultiShootHUD::DrawHUD()
 		GEngine->GameViewport->GetViewportSize(ViewPortSize);
 		const FVector2D ViewPortCenter = ViewPortSize / 2.f;
 
+		float CrosshairOffSet = CrosshairSpreadMax * HUDPackage.CrosshairSpreadScale;
+
 		if (HUDPackage.CrosshairCenter)
 		{
-			DrawCrosshair(HUDPackage.CrosshairCenter, ViewPortCenter);
+			FVector2D Spread(0.f, 0.f);
+			DrawCrosshair(HUDPackage.CrosshairCenter, ViewPortCenter, Spread);
 		}
 		if (HUDPackage.CrosshairLeft)
 		{
-			DrawCrosshair(HUDPackage.CrosshairLeft, ViewPortCenter);
+			FVector2D Spread(-CrosshairOffSet, 0.f);
+			DrawCrosshair(HUDPackage.CrosshairLeft, ViewPortCenter, Spread);
 		}
 		if (HUDPackage.CrosshairRight)
 		{
-			DrawCrosshair(HUDPackage.CrosshairRight, ViewPortCenter);
+			FVector2D Spread(CrosshairOffSet, 0.f);
+			DrawCrosshair(HUDPackage.CrosshairRight, ViewPortCenter, Spread);
 		}
 		if (HUDPackage.CrosshairTop)
 		{
-			DrawCrosshair(HUDPackage.CrosshairTop, ViewPortCenter);
+			FVector2D Spread(0.f, -CrosshairOffSet);
+			DrawCrosshair(HUDPackage.CrosshairTop, ViewPortCenter, Spread);
 		}
 		if (HUDPackage.CrosshairBottom)
 		{
-			DrawCrosshair(HUDPackage.CrosshairBottom, ViewPortCenter);
+			FVector2D Spread(0.f, CrosshairOffSet);
+			DrawCrosshair(HUDPackage.CrosshairBottom, ViewPortCenter, Spread);
 		}
 
 	}
 }
 
-void AMultiShootHUD::DrawCrosshair(UTexture2D* InTexture, FVector2D ViewportCenter)
+void AMultiShootHUD::DrawCrosshair(UTexture2D* InTexture, FVector2D ViewportCenter, FVector2D Spread)
 {
 	const float TextureW = InTexture->GetSizeX();
 	const float TextureH = InTexture->GetSizeY();
 
-	//Texture默认左上角为(0,0), 我们希望使用中心作为绘制的点
+	// Texture 默认左上角为(0,0), 我们希望使用中心作为绘制的点
 	const FVector2D DrawPosition2D(
-		ViewportCenter.X - TextureW / 2.f,
-		ViewportCenter.Y - TextureH / 2.f
+		ViewportCenter.X - TextureW / 2.f + Spread.X,		//添加准星浮动值
+		ViewportCenter.Y - TextureH / 2.f + Spread.Y
 	);
 
 	DrawTexture(

@@ -195,6 +195,26 @@ void UCombatComponent::SetHUDCrossHairs(float DeltaTime)
 				HUDPackage.CrosshairTop = nullptr;
 				HUDPackage.CrosshairBottom = nullptr;
 			}
+
+			//计算CrosshairSpread, 准星散开值
+			//速度因子
+			FVector2D FromSpeedRange(0.f, OwnedCharacter->GetCharacterMovement()->MaxWalkSpeed);
+			FVector2D ToCrosshairSpreadRange(0.f, 1.f);
+			FVector Velocity = OwnedCharacter->GetVelocity();
+			Velocity.Z = 0.f;
+			CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(FromSpeedRange, ToCrosshairSpreadRange, Velocity.Size());
+			//坠落因子
+			if (OwnedCharacter->GetCharacterMovement()->IsFalling())
+			{
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.25f);
+			}
+			else
+			{
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
+			}
+			//效果: 速度大时准星散开, 同时如果IsFalling会散开更大
+			HUDPackage.CrosshairSpreadScale = CrosshairVelocityFactor + CrosshairInAirFactor;
+
 			HUD->SetHUDPackage(HUDPackage);
 		}
 	}

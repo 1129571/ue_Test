@@ -64,4 +64,6 @@ private:
 
 	bool bFireState = false;
 
+	float CrosshairVelocityFactor;			//准星散开的速度因子
+	float CrosshairInAirFactor;				//准星散开的坠落因子
 };
