@@ -177,6 +177,16 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceResult)
 		{
 			TraceResult.ImpactPoint = End;
 		}
+
+		//检测到的对象实现了CrosshairInterface接口(准星变红色)
+		if (TraceResult.GetActor() && TraceResult.GetActor()->Implements<UCrosshairInterface>())
+		{
+			HUDPackage.CrosshairColor = FLinearColor::Red;
+		}
+		else
+		{
+			HUDPackage.CrosshairColor = FLinearColor::White;
+		}
 	}
 }
 
@@ -191,7 +201,6 @@ void UCombatComponent::SetHUDCrossHairs(float DeltaTime)
 		HUD = HUD == nullptr ? Cast<AMultiShootHUD>(Controller->GetHUD()) : HUD;
 		if (HUD)
 		{
-			FHUDPackage HUDPackage;
 			if (EquippedWeapon)
 			{
 				HUDPackage.CrosshairCenter = EquippedWeapon->CrosshairCenter;

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "HUD/MultiShootHUD.h"
 #include "CombatComponent.generated.h"
 
 #define TRACE_LENGTH 80000
@@ -63,6 +64,8 @@ private:
 	float AimWalkSpeed;	
 
 	bool bFireState = false;
+
+	FHUDPackage HUDPackage;
 
 	/* HUD 准星*/
 	float CrosshairVelocityFactor;			//准星散开的速度因子

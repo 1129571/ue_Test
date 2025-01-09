@@ -84,8 +84,9 @@ void UMultiShootAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		{
 			bLocallyControlled = true;
 			FTransform RightHandTransform = MultiShootCharacter->GetMesh()->GetSocketTransform(FName("Hand_R"), ERelativeTransformSpace::RTS_World);
-			RightHandRotation = UKismetMathLibrary::FindLookAtRotation(MultiShootCharacter->GetHitTarget(), RightHandTransform.GetLocation());
+			// 射击目标从远处变为近处时持枪手动画会瞬间跳转, 这里加了平滑
+			FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(MultiShootCharacter->GetHitTarget(), RightHandTransform.GetLocation());
+			RightHandRotation = FMath::RInterpTo(RightHandRotation, LookAtRotation, DeltaTime, 30.f);
 		}
-
 	}
 }

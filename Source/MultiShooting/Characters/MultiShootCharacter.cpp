@@ -43,11 +43,13 @@ AMultiShootCharacter::AMultiShootCharacter()
 	//设置旋转速度(旋转朝向运动)
 	GetCharacterMovement()->RotationRate = FRotator(0.f,850.f, 0.f);
 
+	TurningInPlace = ETurningInPlace::ETIP_NoTurning;
+
 	//防止Block摄像机通道, 导致SpringArm探头变化
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	//开启可视性通道, 便于射击目标检测, 从而改变HUD颜色
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-
-	TurningInPlace = ETurningInPlace::ETIP_NoTurning;
 
 	//设置网络更新频率, 快节奏射击游戏中常被设置为33 66
 	NetUpdateFrequency = 66.f;
