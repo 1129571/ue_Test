@@ -12,6 +12,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "MultiShootAnimInstance.h"
+#include "MultiShooting.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -40,16 +41,17 @@ AMultiShootCharacter::AMultiShootCharacter()
 
 	//设置可以蹲下
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
-	//设置旋转速度(旋转朝向运动)
-	GetCharacterMovement()->RotationRate = FRotator(0.f,850.f, 0.f);
-
-	TurningInPlace = ETurningInPlace::ETIP_NoTurning;
-
 	//防止Block摄像机通道, 导致SpringArm探头变化
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	//便于子弹高精度检测
+	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
 	//开启可视性通道, 便于射击目标检测, 从而改变HUD颜色
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	//设置旋转速度(旋转朝向运动)
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 850.f, 0.f);
+
+	TurningInPlace = ETurningInPlace::ETIP_NoTurning;
 
 	//设置网络更新频率, 快节奏射击游戏中常被设置为33 66
 	NetUpdateFrequency = 66.f;
@@ -161,13 +163,12 @@ void AMultiShootCharacter::AimOffset(float DeltaTime)
 	if (Combat && Combat->EquippedWeapon == nullptr) return;
 	//此函数在Tick调用
 	//我们希望不动时使用Yaw和Pitch的AO, 移动时使用Pitch的AO(因为已经有Lean实现的偏移了, 效果已经比较让人满意)
-	FVector Velocity = GetVelocity();
-	Velocity.Z = 0.f;
-	float Speed = Velocity.Size();
+	float Speed = CalculateSpeed();
 	bool IsFalling = GetCharacterMovement()->IsFalling();
 	//后 : 静止时使用最后一次存储的初始旋转, 再每帧通过当前的BaseAimRotation计算偏移Yaw值
 	if (Speed == 0.f && !IsFalling)
 	{
+		bRotateRootBone = true;
 		//GetBaseAimRotation可以理解为GetControllerRotation(一台机器只有一个Controller)的网络版本
 		FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, StartAimRotation);
@@ -183,12 +184,18 @@ void AMultiShootCharacter::AimOffset(float DeltaTime)
 	//先 : 移动 / 掉落时每帧更新当前的BaseAimRotation, 将其作为初始旋转
 	if (Speed > 0.f || IsFalling)
 	{
+		bRotateRootBone = false;
 		StartAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		AO_Yaw = 0.f;
 		bUseControllerRotationYaw = true;
 		TurningInPlace = ETurningInPlace::ETIP_NoTurning;
 	}
 
+	CalculateAO_Pitch();
+}
+
+void AMultiShootCharacter::CalculateAO_Pitch()
+{
 	//在这里, CharacterMovemnetComponent中对Pitch和Yaw进行了压缩, 以便在网络传递
 	//造成的效果是, 将本地的值发送到服务器后限制在了[0~360)
 	AO_Pitch = GetBaseAimRotation().Pitch;
@@ -202,6 +209,42 @@ void AMultiShootCharacter::AimOffset(float DeltaTime)
 	}
 }
 
+void AMultiShootCharacter::SimProxiesTurn()
+{
+	if (Combat && Combat->EquippedWeapon == nullptr) return;
+
+	bRotateRootBone = false;
+
+	if (CalculateSpeed() > 0.f)
+	{
+		TurningInPlace = ETurningInPlace::ETIP_NoTurning;
+		return;
+	}
+
+	//单独处理 Yaw 旋转, 两帧之间超过某一旋转值就原地播放动画
+	ProxyRotationLastFrame = ProxyRotation;
+	ProxyRotation = GetActorRotation();
+	ProxyYaw = UKismetMathLibrary::NormalizedDeltaRotator(ProxyRotation, ProxyRotationLastFrame).Yaw;
+
+	if (FMath::Abs(ProxyYaw) > TurnThreshold )
+	{
+		if (ProxyYaw > TurnThreshold)
+		{
+			TurningInPlace = ETurningInPlace::ETIP_Right;
+		}
+		else if(ProxyYaw < -TurnThreshold)
+		{
+			TurningInPlace = ETurningInPlace::ETIP_Left;
+		}
+		else 
+		{
+			TurningInPlace = ETurningInPlace::ETIP_NoTurning;
+		}
+		return;
+	}
+	TurningInPlace = ETurningInPlace::ETIP_NoTurning;
+}
+
 void AMultiShootCharacter::Jump()
 {
 	//覆写jump方法, 我们希望在蹲下jump时是站起来
@@ -213,6 +256,18 @@ void AMultiShootCharacter::Jump()
 	{
 		Super::Jump();
 	}
+}
+
+void AMultiShootCharacter::MulticastHitMontage_Implementation()
+{
+	PlayHitReactMontage();
+}
+
+void AMultiShootCharacter::OnRep_ReplicatedMovement()
+{
+	Super::OnRep_ReplicatedMovement();
+	SimProxiesTurn();
+	TimeSinceLastMovementReplication = 0.f;
 }
 
 void AMultiShootCharacter::TurnInPlaceFun(float DeltaTime)
@@ -282,6 +337,13 @@ void AMultiShootCharacter::HideCameraIfCharacterClose()
 	}
 }
 
+float AMultiShootCharacter::CalculateSpeed()
+{
+	FVector Velocity = GetVelocity();
+	Velocity.Z = 0.f;
+	return Velocity.Size();
+}
+
 void AMultiShootCharacter::SetOverlappingWeapon(AWeapon* InWeapon)
 {
 	if (IsLocallyControlled())
@@ -332,7 +394,19 @@ void AMultiShootCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	AimOffset(DeltaTime);
+	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled())
+	{
+		AimOffset(DeltaTime);
+	}
+	else
+	{	//本地模拟角色
+		TimeSinceLastMovementReplication += DeltaTime;
+		if (TimeSinceLastMovementReplication > 0.25f)
+		{
+			OnRep_ReplicatedMovement();
+		}
+		CalculateAO_Pitch();
+	}
 
 	HideCameraIfCharacterClose();
 }
@@ -388,6 +462,21 @@ void AMultiShootCharacter::PlayFireMontage(bool bAiming)
 		AnimInstance->Montage_Play(WeaponFireMontage);
 		FName SectionName;		//我们的Montage有两个Section, Hip和Aim部分
 		SectionName = bAiming ? FName("RifleAim") : FName("RifleHip");
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void AMultiShootCharacter::PlayHitReactMontage()
+{
+	//因为我们的Montage动画是持枪的, 所有需要进行武器检查
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && HitReactMontage)
+	{
+		AnimInstance->Montage_Play(HitReactMontage);
+		FName SectionName;
+		SectionName = FName("FromLeft");
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }

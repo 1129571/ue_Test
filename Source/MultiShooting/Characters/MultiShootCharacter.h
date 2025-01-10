@@ -23,6 +23,13 @@ public:
 	virtual void PostInitializeComponents() override;
 
 	void PlayFireMontage(bool bAiming);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastHitMontage();
+
+	//Actor 运动发生变化时调用
+	virtual void OnRep_ReplicatedMovement() override;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -36,8 +43,11 @@ protected:
 	void AimReleased();
 	void FirePressed();
 	void FireReleased();
-	void AimOffset(float DeltaTime);
+	void AimOffset(float DeltaTime);		//处理本地控制--动画每帧执行, 旋转根骨骼效果很好
+	void CalculateAO_Pitch();
+	void SimProxiesTurn();					//处理模拟角色--动画执行频率低, 旋转根骨骼会导致动画不流畅
 	virtual void Jump() override;
+	void PlayHitReactMontage();
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -64,6 +74,9 @@ private:
 	UPROPERTY(EditAnywhere, Category=Combat)
 	class UAnimMontage* WeaponFireMontage;
 
+	UPROPERTY(EditAnywhere, Category = Combat)
+	class UAnimMontage* HitReactMontage;
+
 	//用于在AimOffset(-90, 90)超出时原地转身
 	ETurningInPlace TurningInPlace;
 	void TurnInPlaceFun(float DeltaTime);
@@ -83,6 +96,17 @@ private:
 	UPROPERTY(EditAnywhere)
 	float CameraThreshold = 200.f;
 
+	//最初我们通过旋转根骨骼解决转身和AimOffset, 但是它在非本地控制角色上很卡顿
+	//因为本地控制角色的动画蓝图执行频率比非本地控制角色的动画蓝图执行频率高
+	//所以我们对非本地控制角色采用不同的处理方法
+	bool bRotateRootBone;
+	float TurnThreshold = 0.5f;
+	FRotator ProxyRotationLastFrame;
+	FRotator ProxyRotation;
+	float ProxyYaw;
+	float TimeSinceLastMovementReplication;
+	float CalculateSpeed();
+
 public:	
 	void SetOverlappingWeapon(AWeapon* InWeapon);
 	bool IsWeaponEquipped();
@@ -93,5 +117,6 @@ public:
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE bool ShouldRtateRootBone() const { return bRotateRootBone; }
 	FVector GetHitTarget() const;
 };

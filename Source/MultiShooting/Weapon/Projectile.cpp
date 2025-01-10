@@ -9,6 +9,8 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Particles/ParticleSystem.h"
 #include "Sound/SoundCue.h"
+#include "Characters/MultiShootCharacter.h"
+#include "MultiShooting.h"
 
 AProjectile::AProjectile()
 {
@@ -27,6 +29,8 @@ AProjectile::AProjectile()
 	CollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+	//使用自定义通道, 对Character模型检测
+	CollisionBox->SetCollisionResponseToChannel(ECC_SkeletalMesh, ECollisionResponse::ECR_Block);
 
 	//发射物移动组件, 不需要附加根组件
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
@@ -64,9 +68,14 @@ void AProjectile::BeginPlay()
 //仅在服务器绑定
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	//Todo: 应用伤害
+	//击中目标
+	AMultiShootCharacter* MultiShootCharacter = Cast<AMultiShootCharacter>(OtherActor);
+	if (MultiShootCharacter)
+	{
+		MultiShootCharacter->MulticastHitMontage();
+	}
 	
-	//销毁自身, Projectile是复制的, 因此可以利用它的变化让客户端也播放命中音效和特效
+	//销毁自身, Projectile 是复制的, 因此可以利用它的变化让客户端也播放命中音效和特效
 	Destroy();
 }
 

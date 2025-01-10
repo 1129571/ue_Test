@@ -79,4 +79,7 @@ private:
 	//不能直接在动画蓝图调用 Character->IsLocallyControlled(), 因为它不是线程安全的, 而动画蓝图在非主线程运行
 	UPROPERTY(BlueprintReadOnly, Category = "Fix Hands", meta = (AllowPrivateAccess = "true"))
 	bool bLocallyControlled;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Fix Rotate", meta = (AllowPrivateAccess = "true"))
+	bool bRotateRootBone;
 };
