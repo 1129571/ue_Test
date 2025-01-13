@@ -36,6 +36,8 @@ protected:
 
 	void WeaponFire(bool bFire);
 
+	void Fire();
+
 	UFUNCTION(NetMulticast, Reliable)
 	void MultiCastFire(const FVector_NetQuantize& InHitTarget);
 
@@ -63,7 +65,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	float AimWalkSpeed;	
 
-	bool bFireState = false;
+	bool bFireButtonPressed = false;
 
 	FHUDPackage HUDPackage;
 
@@ -75,13 +77,26 @@ private:
 
 	FVector HitTarget;
 
-	/* FOV */
+	/* 
+	* FOV 相关
+	*/
 	float DefaultFOV;
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = "Combat|FOV")
 	float ZoomedFOV = 30.f;
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = "Combat|FOV")
 	float ZoomInterpSpeed = 20.f;		// FOV 回归正常的速度, 这里我认为他和武器无关
 	float CurrnetFOV;
 
 	void InterpFOV(float DeltaTime);
+
+	/*
+	* 自动开火相关
+	*/
+
+	bool bCanFire = true;
+
+	FTimerHandle AutoFireTimer;
+
+	void StartAutoFireTimer();
+	void AutoFireTimerFinished();
 };

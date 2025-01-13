@@ -100,7 +100,7 @@ private:
 	//因为本地控制角色的动画蓝图执行频率比非本地控制角色的动画蓝图执行频率高
 	//所以我们对非本地控制角色采用不同的处理方法
 	bool bRotateRootBone;
-	float TurnThreshold = 0.5f;
+	float TurnThreshold = 0.25f;
 	FRotator ProxyRotationLastFrame;
 	FRotator ProxyRotation;
 	float ProxyYaw;

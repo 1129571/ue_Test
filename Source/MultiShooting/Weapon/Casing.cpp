@@ -17,6 +17,7 @@ ACasing::ACasing()
 
 	//防止弹壳模型对SpringArm阻挡
 	CasingMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	CasingMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 
 	//启用物理模拟和重力
 	CasingMesh->SetSimulatePhysics(true);
@@ -47,7 +48,7 @@ void ACasing::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrim
 
 	bFirstHit = false;
 
-	GetWorld()->GetTimerManager().SetTimer(DestroyTimeHandle, this, &ThisClass::DestroyFun, 3.f, false);
+	GetWorld()->GetTimerManager().SetTimer(DestroyTimeHandle, this, &ThisClass::DestroyFun, 1.5f, false);
 }
 
 void ACasing::DestroyFun()

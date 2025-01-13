@@ -13,7 +13,7 @@ enum class EWeaponState : uint8
 	EWS_Initial UMETA(DisplayName = "Initial State"),
 	EWS_Equipped UMETA(DisplayName = "Equipped"),
 	EWS_Dropped UMETA(DisplayName = "Dropped"),
-	//占位, 防止便利越界 或 获取枚举最大值等
+	//占位, 防止越界 或 获取枚举最大值等
 	EWS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
@@ -35,16 +35,25 @@ public:
 	virtual void Fire(const FVector& HitTarget);
 
 	//武器的准星资源
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
 	class UTexture2D* CrosshairCenter;
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
 	UTexture2D* CrosshairLeft;
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
 	UTexture2D* CrosshairRight;
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
 	UTexture2D* CrosshairTop;
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
 	UTexture2D* CrosshairBottom;
+
+	/*
+	* 自动开火武器相关
+	*/
+	UPROPERTY(EditAnywhere, Category = "Weapon|AutoFire")
+	bool bCanAutoFire = true;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon|AutoFire")
+	float AutoFireDelay = 0.2f;
 
 protected:
 	virtual void BeginPlay() override;

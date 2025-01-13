@@ -11,8 +11,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PlayerController/MultiShootPlayerController.h"
-#include "HUD/MultiShootHUD.h"
 #include "Camera/CameraComponent.h"
+#include "TimerManager.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -20,6 +20,40 @@ UCombatComponent::UCombatComponent()
 
 	BaseWalkSpeed = 600.f;
 	AimWalkSpeed = 400.f;
+}
+
+void UCombatComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	if (OwnedCharacter)
+	{
+		OwnedCharacter->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+
+		if (OwnedCharacter->GetFollowCamera())
+		{
+			DefaultFOV = OwnedCharacter->GetFollowCamera()->FieldOfView;
+			CurrnetFOV = DefaultFOV;
+		}
+	}
+}
+
+void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// 仅本地控制的角色需要执行(提高沉浸式, 避免资源浪费)
+	if (OwnedCharacter && OwnedCharacter->IsLocallyControlled())
+	{
+		FHitResult HitResult;
+		TraceUnderCrosshairs(HitResult);
+		HitTarget = HitResult.ImpactPoint;
+		//HUD更新
+		SetHUDCrossHairs(DeltaTime);
+
+		//FOV更新
+		InterpFOV(DeltaTime);
+	}
+
 }
 
 void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
@@ -45,27 +79,22 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 	OwnedCharacter->bUseControllerRotationYaw = true;
 }
 
+void UCombatComponent::onRep_EquippedWeapon()
+{
+	if (OwnedCharacter && EquippedWeapon)
+	{
+		//持有武器时不希望朝向运动方向(此处是来自服务器的Replicated通知)
+		OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+		OwnedCharacter->bUseControllerRotationYaw = true;
+	}
+}
+
 void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
 	DOREPLIFETIME(UCombatComponent, bIsAiming);
-}
-
-void UCombatComponent::BeginPlay()
-{
-	Super::BeginPlay();
-	if (OwnedCharacter)
-	{
-		OwnedCharacter->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
-
-		if (OwnedCharacter->GetFollowCamera())
-		{
-			DefaultFOV = OwnedCharacter->GetFollowCamera()->FieldOfView;
-			CurrnetFOV = DefaultFOV;
-		}
-	}
 }
 
 void UCombatComponent::SetAiming(bool InbAiming)
@@ -91,34 +120,55 @@ void UCombatComponent::ServerSetAiming_Implementation(bool InbAiming)
 	}
 }
 
-void UCombatComponent::onRep_EquippedWeapon()
+void UCombatComponent::Fire()
 {
- 	if (OwnedCharacter && EquippedWeapon)
- 	{
-		//持有武器时不希望朝向运动方向(此处是来自服务器的Replicated通知)
-		OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
-		OwnedCharacter->bUseControllerRotationYaw = true;
+	if (bCanFire)
+	{
+		bCanFire = false;
+		// Tick 中进行了击中目标检测, 并进行 HitTarget = TraceResult.ImpactPoint
+		// TraceResult.ImpactPoint 已经是FVector_NetQuantize类型了
+		ServerFire(HitTarget);
+
+		//开火时本地机器增加射击因子(用于HUD散开程度)
+		if (EquippedWeapon)
+		{
+			CrosshairShootingFactor = 2.f;
+		}
+		StartAutoFireTimer();
+	}
+}
+
+void UCombatComponent::StartAutoFireTimer()
+{
+	if (EquippedWeapon == nullptr || OwnedCharacter == nullptr) return;
+	OwnedCharacter->GetWorldTimerManager().SetTimer(
+		AutoFireTimer,
+		this,
+		&ThisClass::AutoFireTimerFinished,
+		EquippedWeapon->AutoFireDelay
+	);
+}
+
+void UCombatComponent::AutoFireTimerFinished()
+{
+	if (EquippedWeapon == nullptr) return;
+	bCanFire = true;
+	if (bFireButtonPressed && EquippedWeapon->bCanAutoFire)
+	{
+		Fire();
 	}
 }
 
 //本地机器执行
 void UCombatComponent::WeaponFire(bool bFire)
 {
-	bFireState = bFire;
+	if (EquippedWeapon == nullptr) return;
+	bFireButtonPressed = bFire;
 
 	//本地机器ServerRpc---服务器MulticaseRpc--->所有客户端
-	if (bFireState)
+	if (bFireButtonPressed)
 	{
-		FHitResult TraceResult;
-		TraceUnderCrosshairs(TraceResult);
-		//TraceResult.ImpactPoint已经是FVector_NetQuantize类型了
-		ServerFire(TraceResult.ImpactPoint);
-
-		//开火时本地机器增加射击因子(用于HUD)
-		if (EquippedWeapon)
-		{
-			CrosshairShootingFactor = 2.f;
-		}
+		Fire();
 	}
 }
 
@@ -288,22 +338,4 @@ void UCombatComponent::InterpFOV(float DeltaTime)
 	}
 }
 
-void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// 仅本地控制的角色需要执行(提高沉浸式, 避免资源浪费)
-	if (OwnedCharacter && OwnedCharacter->IsLocallyControlled())
-	{
-		FHitResult HitResult;
-		TraceUnderCrosshairs(HitResult);
-		HitTarget = HitResult.ImpactPoint;
-		//HUD更新
-		SetHUDCrossHairs(DeltaTime);
-
-		//FOV更新
-		InterpFOV(DeltaTime);
-	}
-
-}
 
