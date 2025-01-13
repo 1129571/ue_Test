@@ -2,6 +2,25 @@
 
 
 #include "MultiShootHUD.h"
+#include "GameFramework/PlayerController.h"
+#include "CharacterOverlay.h"
+
+void AMultiShootHUD::BeginPlay()
+{
+	Super::BeginPlay();
+
+	AddCharacterOverlay();
+}
+
+void AMultiShootHUD::AddCharacterOverlay()
+{
+	APlayerController* PlayerController = GetOwningPlayerController();
+	if (PlayerController && CharacterOverlayClass)
+	{
+		CharacterOverlay = CreateWidget<UCharacterOverlay>(PlayerController, CharacterOverlayClass);
+		CharacterOverlay->AddToViewport();
+	}
+}
 
 void AMultiShootHUD::DrawHUD()
 {

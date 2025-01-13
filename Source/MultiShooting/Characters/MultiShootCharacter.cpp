@@ -13,6 +13,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "MultiShootAnimInstance.h"
 #include "MultiShooting.h"
+#include "PlayerController/MultiShootPlayerController.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -62,6 +63,11 @@ void AMultiShootCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	MultiShootPlayerController = Cast<AMultiShootPlayerController>(Controller);
+	if (MultiShootPlayerController)
+	{
+		MultiShootPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
+	}
 }
 
 void AMultiShootCharacter::MoveForward(float AxisValue)
@@ -344,6 +350,11 @@ float AMultiShootCharacter::CalculateSpeed()
 	return Velocity.Size();
 }
 
+void AMultiShootCharacter::OnRep_CurrentHealth()
+{
+
+}
+
 void AMultiShootCharacter::SetOverlappingWeapon(AWeapon* InWeapon)
 {
 	if (IsLocallyControlled())
@@ -440,6 +451,7 @@ void AMultiShootCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	//DOREPLIFETIME(AMultiShootCharacter, OverlappingWeapon);
 	//增加了把这个变量复制给哪个客户端, 该例只会复制给Pawn的拥有者
 	DOREPLIFETIME_CONDITION(AMultiShootCharacter, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME(AMultiShootCharacter, CurrentHealth);
 
 }
 

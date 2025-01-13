@@ -14,4 +14,14 @@ class MULTISHOOTING_API AMultiShootPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 	
+public:
+	void SetHUDHealth(float InCurrentHealth, float InMaxHealth);
+
+protected:
+	virtual void BeginPlay() override;
+
+private:
+
+	class AMultiShootHUD* MultiHUD;
+
 };

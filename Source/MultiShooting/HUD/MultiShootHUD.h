@@ -34,6 +34,15 @@ public:
 	//逐帧调用绘制到屏幕
 	virtual void DrawHUD() override;
 
+	UPROPERTY(EditAnywhere, Category="HUD|Player Stats")
+	TSubclassOf<class UUserWidget> CharacterOverlayClass;
+
+	class UCharacterOverlay* CharacterOverlay;
+
+private:
+	virtual void BeginPlay() override;
+	void AddCharacterOverlay();
+
 private:
 	FHUDPackage HUDPackage;
 

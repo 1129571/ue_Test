@@ -50,10 +50,10 @@ protected:
 	void PlayHitReactMontage();
 
 private:
-	UPROPERTY(VisibleAnywhere, Category = Camera)
+	UPROPERTY(VisibleAnywhere, Category = "Character|Camera")
 	class USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, Category = Camera)
+	UPROPERTY(VisibleAnywhere, Category = "Character|Camera")
 	class UCameraComponent* FollowCamera;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -71,10 +71,10 @@ private:
 	float AO_Pitch;
 	FRotator StartAimRotation;
 
-	UPROPERTY(EditAnywhere, Category=Combat)
+	UPROPERTY(EditAnywhere, Category = "Character|Combat")
 	class UAnimMontage* WeaponFireMontage;
 
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = "Character|Combat")
 	class UAnimMontage* HitReactMontage;
 
 	//用于在AimOffset(-90, 90)超出时原地转身
@@ -106,6 +106,18 @@ private:
 	float ProxyYaw;
 	float TimeSinceLastMovementReplication;
 	float CalculateSpeed();
+
+	/**
+	 * 玩家生命值
+	 */
+	float MaxHealth = 100.f;
+
+	UPROPERTY(ReplicatedUsing="OnRep_CurrentHealth", VisibleAnywhere, Category="Character|Health")
+	float CurrentHealth = 100.f;
+	UFUNCTION()
+	void OnRep_CurrentHealth();
+
+	class AMultiShootPlayerController* MultiShootPlayerController;
 
 public:	
 	void SetOverlappingWeapon(AWeapon* InWeapon);
