@@ -21,11 +21,14 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//在所有组件被初始化并且基本属性设置好后调用. 构造之后, BeginPlay之前
 	virtual void PostInitializeComponents() override;
-
 	void PlayFireMontage(bool bAiming);
-
+	void PlayElimMontage();
 	//Actor 运动发生变化时调用
 	virtual void OnRep_ReplicatedMovement() override;
+	//玩家淘汰
+	void Elim();						//Do Something Only On Server
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastElim();
 
 protected:
 	virtual void BeginPlay() override;
@@ -78,11 +81,14 @@ private:
 	float AO_Pitch;
 	FRotator StartAimRotation;
 
-	UPROPERTY(EditAnywhere, Category = "Character|Combat")
+	UPROPERTY(EditAnywhere, Category = "Character|Animation")
 	class UAnimMontage* WeaponFireMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Character|Combat")
+	UPROPERTY(EditAnywhere, Category = "Character|Animation")
 	class UAnimMontage* HitReactMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Character|Animation")
+	class UAnimMontage* ElimMontage;
 
 	//用于在AimOffset(-90, 90)超出时原地转身
 	ETurningInPlace TurningInPlace;
@@ -126,6 +132,16 @@ private:
 
 	class AMultiShootPlayerController* MultiShootPlayerController;
 
+	//对于淘汰的Characte, 不再使用IK和旋转骨骼等动画
+	bool bElimmed = false;
+
+	FTimerHandle ElimTimer;
+
+	UPROPERTY(EditDefaultsOnly)
+	float ElimDelay = 3.f;
+
+	void ElimTimerFinished();
+
 public:	
 	void SetOverlappingWeapon(AWeapon* InWeapon);
 	bool IsWeaponEquipped();
@@ -137,5 +153,6 @@ public:
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE bool ShouldRtateRootBone() const { return bRotateRootBone; }
+	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 	FVector GetHitTarget() const;
 };

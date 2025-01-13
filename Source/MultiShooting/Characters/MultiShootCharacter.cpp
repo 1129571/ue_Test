@@ -14,10 +14,15 @@
 #include "MultiShootAnimInstance.h"
 #include "MultiShooting.h"
 #include "PlayerController/MultiShootPlayerController.h"
+#include "GameMode/MultiShootGameMode.h"
+#include "TimerManager.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	//生成时碰撞, 使用总是生成, 如果碰撞就尝试移动位置. 防止生成时因为碰撞导致生成失败
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());			//不设置到胶囊组件是因为防止下蹲时相机Z轴移动
@@ -273,6 +278,34 @@ void AMultiShootCharacter::OnRep_ReplicatedMovement()
 	TimeSinceLastMovementReplication = 0.f;
 }
 
+//接收到伤害后(只绑定到了服务器)调用
+//Todo : 死亡后武器 自身碰撞等
+void AMultiShootCharacter::Elim()
+{
+	MulticastElim();
+	GetWorldTimerManager().SetTimer(
+		ElimTimer,
+		this,
+		&ThisClass::ElimTimerFinished,
+		ElimDelay
+	);
+}
+
+void AMultiShootCharacter::MulticastElim_Implementation()
+{
+	bElimmed = true;
+	PlayElimMontage();
+}
+
+void AMultiShootCharacter::ElimTimerFinished()
+{
+	AMultiShootGameMode* MultiShootGameMode = GetWorld()->GetAuthGameMode<AMultiShootGameMode>();
+	if (MultiShootGameMode)
+	{
+		MultiShootGameMode->RequestRespawn(this, Controller);
+	}
+}
+
 void AMultiShootCharacter::TurnInPlaceFun(float DeltaTime)
 {
 	if (AO_Yaw < -90.f)
@@ -470,6 +503,15 @@ void AMultiShootCharacter::PlayFireMontage(bool bAiming)
 	}
 }
 
+void AMultiShootCharacter::PlayElimMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && ElimMontage)
+	{
+		AnimInstance->Montage_Play(ElimMontage);
+	}
+}
+
 void AMultiShootCharacter::PlayHitReactMontage()
 {
 	//因为我们的Montage动画是持枪的, 所有需要进行武器检查
@@ -491,6 +533,17 @@ void AMultiShootCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, con
 	//仅在服务器执行, 客户端通过变量复制执行
 	UpdateHUDHealth();
 	PlayHitReactMontage();
+
+	if (CurrentHealth == 0.f)
+	{
+		AMultiShootGameMode* MultiShootGameMode = GetWorld()->GetAuthGameMode<AMultiShootGameMode>();
+		if (MultiShootGameMode)
+		{
+			MultiShootPlayerController = MultiShootPlayerController == nullptr ? Cast<AMultiShootPlayerController>(Controller) : MultiShootPlayerController;
+			AMultiShootPlayerController* AttackerController = Cast<AMultiShootPlayerController>(InstigatedBy);
+			MultiShootGameMode->PlayerEliminated(this, MultiShootPlayerController, AttackerController);
+		}
+	}
 }
 
 //仅在客户端执行
