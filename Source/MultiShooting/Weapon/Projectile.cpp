@@ -19,7 +19,7 @@ AProjectile::AProjectile()
 	bReplicates = true;
 
 	// 发射物的根组件必须支持碰撞。通常，发射物的根组件应该是一个带碰撞的组件，例如Sphere Component或Capsule Component，而不是Scene Component。
-//	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+	//	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 
 	//碰撞设置
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
@@ -68,13 +68,6 @@ void AProjectile::BeginPlay()
 //仅在服务器绑定
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	//击中目标
-	AMultiShootCharacter* MultiShootCharacter = Cast<AMultiShootCharacter>(OtherActor);
-	if (MultiShootCharacter)
-	{
-		MultiShootCharacter->MulticastHitMontage();
-	}
-	
 	//销毁自身, Projectile 是复制的, 因此可以利用它的变化让客户端也播放命中音效和特效
 	Destroy();
 }

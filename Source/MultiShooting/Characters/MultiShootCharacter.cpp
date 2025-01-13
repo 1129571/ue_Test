@@ -62,11 +62,13 @@ AMultiShootCharacter::AMultiShootCharacter()
 void AMultiShootCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	MultiShootPlayerController = Cast<AMultiShootPlayerController>(Controller);
-	if (MultiShootPlayerController)
+
+	UpdateHUDHealth();
+
+	//在服务器绑定OnTakeAnyDamage事件
+	if (HasAuthority())
 	{
-		MultiShootPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
+		OnTakeAnyDamage.AddDynamic(this, &ThisClass::ReceiveDamage);
 	}
 }
 
@@ -264,11 +266,6 @@ void AMultiShootCharacter::Jump()
 	}
 }
 
-void AMultiShootCharacter::MulticastHitMontage_Implementation()
-{
-	PlayHitReactMontage();
-}
-
 void AMultiShootCharacter::OnRep_ReplicatedMovement()
 {
 	Super::OnRep_ReplicatedMovement();
@@ -348,11 +345,6 @@ float AMultiShootCharacter::CalculateSpeed()
 	FVector Velocity = GetVelocity();
 	Velocity.Z = 0.f;
 	return Velocity.Size();
-}
-
-void AMultiShootCharacter::OnRep_CurrentHealth()
-{
-
 }
 
 void AMultiShootCharacter::SetOverlappingWeapon(AWeapon* InWeapon)
@@ -490,6 +482,30 @@ void AMultiShootCharacter::PlayHitReactMontage()
 		FName SectionName;
 		SectionName = FName("FromLeft");
 		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void AMultiShootCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
+	//仅在服务器执行, 客户端通过变量复制执行
+	UpdateHUDHealth();
+	PlayHitReactMontage();
+}
+
+//仅在客户端执行
+void AMultiShootCharacter::OnRep_CurrentHealth()
+{
+	UpdateHUDHealth();
+	PlayHitReactMontage();
+}
+
+void AMultiShootCharacter::UpdateHUDHealth()
+{
+	MultiShootPlayerController = MultiShootPlayerController == nullptr ? Cast<AMultiShootPlayerController>(Controller) : MultiShootPlayerController;
+	if (MultiShootPlayerController)
+	{
+		MultiShootPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);
 	}
 }
 

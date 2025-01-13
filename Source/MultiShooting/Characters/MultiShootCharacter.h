@@ -24,9 +24,6 @@ public:
 
 	void PlayFireMontage(bool bAiming);
 
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastHitMontage();
-
 	//Actor 运动发生变化时调用
 	virtual void OnRep_ReplicatedMovement() override;
 
@@ -48,6 +45,16 @@ protected:
 	void SimProxiesTurn();					//处理模拟角色--动画执行频率低, 旋转根骨骼会导致动画不流畅
 	virtual void Jump() override;
 	void PlayHitReactMontage();
+
+	UFUNCTION()
+	void ReceiveDamage(
+		AActor* DamagedActor, 
+		float Damage, 
+		const class UDamageType* DamageType, 
+		class AController* InstigatedBy, 
+		AActor* DamageCauser
+	);
+	void UpdateHUDHealth();
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Character|Camera")
