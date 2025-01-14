@@ -62,6 +62,8 @@ AMultiShootCharacter::AMultiShootCharacter()
 	//设置网络更新频率, 快节奏射击游戏中常被设置为33 66
 	NetUpdateFrequency = 66.f;
 	MinNetUpdateFrequency = 33.f;
+
+	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimeComponent"));
 }
 
 void AMultiShootCharacter::BeginPlay()
@@ -295,6 +297,16 @@ void AMultiShootCharacter::MulticastElim_Implementation()
 {
 	bElimmed = true;
 	PlayElimMontage();
+
+	//使用溶解材质并初始化
+	if (DissolveMaterialInstance)
+	{
+		DynamicDissolveMaterialInstance = UMaterialInstanceDynamic::Create(DissolveMaterialInstance, this);
+		GetMesh()->SetMaterial(0, DynamicDissolveMaterialInstance);
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Dissolve"), 0.55f);
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Glow"), 200.f);
+	}
+	StartDissolve();
 }
 
 void AMultiShootCharacter::ElimTimerFinished()
@@ -303,6 +315,25 @@ void AMultiShootCharacter::ElimTimerFinished()
 	if (MultiShootGameMode)
 	{
 		MultiShootGameMode->RequestRespawn(this, Controller);
+	}
+}
+
+void AMultiShootCharacter::UpdateDissolveMaterial(float DissolveValue)
+{
+	if (DynamicDissolveMaterialInstance)
+	{
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Dissolve"), DissolveValue);
+	}
+}
+
+void AMultiShootCharacter::StartDissolve()
+{
+	DissolveTrack.BindDynamic(this, &ThisClass::UpdateDissolveMaterial);
+	if (DissolveCurve && DissolveTimeline)
+	{
+		//Timeline 使用指定Curve 资产和 函数(类似于蓝图TimeLine后面的执行内容?)
+		DissolveTimeline->AddInterpFloat(DissolveCurve, DissolveTrack);
+		DissolveTimeline->Play();
 	}
 }
 

@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "MultiShootTypes/TurningInPlace.h"
 #include "Interface/CrosshairInterface.h"
+#include "Components/TimeLineComponent.h"
 #include "MultiShootCharacter.generated.h"
 
 UCLASS()
@@ -141,6 +142,31 @@ private:
 	float ElimDelay = 3.f;
 
 	void ElimTimerFinished();
+
+	/**
+	 * 实现Character使用Curve的溶解效果(类似Timeline)
+	 */
+	UPROPERTY(VisibleAnywhere)
+	UTimelineComponent* DissolveTimeline;
+
+	//处理Float Timeline 的委托
+	FOnTimelineFloat DissolveTrack;
+
+	UFUNCTION()		//绑定到委托, 即TimeLine每帧更新的事情
+	void UpdateDissolveMaterial(float DissolveValue);
+
+	UPROPERTY(EditAnywhere)
+	UCurveFloat* DissolveCurve;
+
+	void StartDissolve();
+
+	//可以在运行时修改的动态材质实例
+	UPROPERTY(VisibleAnywhere, Category="Character|Elim");
+	UMaterialInstanceDynamic* DynamicDissolveMaterialInstance;
+
+	//在蓝图上设置的, 通过它创建动态材质实例, 便于在运行时对材质进行修改
+	UPROPERTY(EditAnywhere, Category="Character|Elim")
+	UMaterialInstance* DissolveMaterialInstance;
 
 public:	
 	void SetOverlappingWeapon(AWeapon* InWeapon);
