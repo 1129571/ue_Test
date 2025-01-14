@@ -85,8 +85,15 @@ void AWeapon::OnRep_WeaponStateChange(EWeaponState LastState)
 	case EWeaponState::EWS_Equipped:
 		ShowPickupWidget(false);
 		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		//防止Drop过程中玩家试图拾取时因为碰撞导致操作不流畅
+		WeaponMesh->SetSimulatePhysics(false);
+		WeaponMesh->SetEnableGravity(false);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
 	case EWeaponState::EWS_Dropped:
+		WeaponMesh->SetSimulatePhysics(true);
+		WeaponMesh->SetEnableGravity(true);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		break;
 	case EWeaponState::EWS_MAX:
 		break;
@@ -106,10 +113,21 @@ void AWeapon::SetWeaponState(EWeaponState NewWeaponState)
 	case EWeaponState::EWS_Equipped:
 		//拾取武器后就不再显示PickupWidget了
 		ShowPickupWidget(false);
-		//武器被拾取后就不再产生碰撞检测了
 		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		//防止Drop过程中玩家试图拾取时因为碰撞导致操作不流畅
+		WeaponMesh->SetSimulatePhysics(false);
+		WeaponMesh->SetEnableGravity(false);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
 	case EWeaponState::EWS_Dropped:
+		if (HasAuthority())
+		{
+			//拾取武器只发生在服务器, 客户端无权利知道
+			AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		}
+		WeaponMesh->SetSimulatePhysics(true);
+		WeaponMesh->SetEnableGravity(true);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		break;
 	case EWeaponState::EWS_MAX:
 		break;
@@ -162,5 +180,15 @@ void AWeapon::Fire(const FVector& HitTarget)
 			}
 		}
 	}
+}
+
+void AWeapon::Dropped()
+{
+	SetWeaponState(EWeaponState::EWS_Dropped);
+
+	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+	WeaponMesh->DetachFromComponent(DetachRules);
+
+	SetOwner(nullptr);
 }
 

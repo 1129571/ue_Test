@@ -280,10 +280,14 @@ void AMultiShootCharacter::OnRep_ReplicatedMovement()
 	TimeSinceLastMovementReplication = 0.f;
 }
 
-//接收到伤害后(只绑定到了服务器)调用
-//Todo : 死亡后武器 自身碰撞等
+//接收到伤害后若死亡(只绑定到了服务器)调用
 void AMultiShootCharacter::Elim()
 {
+	//武器掉落
+	if (Combat && Combat->EquippedWeapon)
+	{
+		Combat->EquippedWeapon->Dropped();
+	}
 	MulticastElim();
 	GetWorldTimerManager().SetTimer(
 		ElimTimer,
@@ -298,7 +302,7 @@ void AMultiShootCharacter::MulticastElim_Implementation()
 	bElimmed = true;
 	PlayElimMontage();
 
-	//使用溶解材质并初始化
+	//使用溶解材质并初始化材质参数
 	if (DissolveMaterialInstance)
 	{
 		DynamicDissolveMaterialInstance = UMaterialInstanceDynamic::Create(DissolveMaterialInstance, this);
@@ -307,6 +311,19 @@ void AMultiShootCharacter::MulticastElim_Implementation()
 		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Glow"), 200.f);
 	}
 	StartDissolve();
+
+	//禁用角色移动相关能力
+	GetCharacterMovement()->DisableMovement();					//不能移动, 但是可以旋转角色
+	GetCharacterMovement()->StopMovementImmediately();			//不能再旋转角色
+	if (MultiShootPlayerController)
+	{
+		//禁用输入, 防止死亡后还能开火等操作
+		DisableInput(MultiShootPlayerController);
+	}
+
+	//禁用角色碰撞
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AMultiShootCharacter::ElimTimerFinished()
@@ -314,7 +331,7 @@ void AMultiShootCharacter::ElimTimerFinished()
 	AMultiShootGameMode* MultiShootGameMode = GetWorld()->GetAuthGameMode<AMultiShootGameMode>();
 	if (MultiShootGameMode)
 	{
-		MultiShootGameMode->RequestRespawn(this, Controller);
+		MultiShootGameMode->RequestRespawn(this, GetController());
 	}
 }
 
@@ -460,7 +477,7 @@ FVector AMultiShootCharacter::GetHitTarget() const
 void AMultiShootCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled())
 	{
 		AimOffset(DeltaTime);
@@ -558,10 +575,11 @@ void AMultiShootCharacter::PlayHitReactMontage()
 	}
 }
 
+//仅在服务器执行, 客户端通过变量复制执行
 void AMultiShootCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
-	//仅在服务器执行, 客户端通过变量复制执行
+	
 	UpdateHUDHealth();
 	PlayHitReactMontage();
 
@@ -586,7 +604,7 @@ void AMultiShootCharacter::OnRep_CurrentHealth()
 
 void AMultiShootCharacter::UpdateHUDHealth()
 {
-	MultiShootPlayerController = MultiShootPlayerController == nullptr ? Cast<AMultiShootPlayerController>(Controller) : MultiShootPlayerController;
+	MultiShootPlayerController = MultiShootPlayerController == nullptr ? Cast<AMultiShootPlayerController>(GetController()) : MultiShootPlayerController;
 	if (MultiShootPlayerController)
 	{
 		MultiShootPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);

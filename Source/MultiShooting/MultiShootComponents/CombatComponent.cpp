@@ -81,6 +81,16 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 
 void UCombatComponent::onRep_EquippedWeapon()
 {
+	//为什么还要在客户端执行将Weapon附加到Socket?
+	//因为武器掉落会启用模拟物理, 而模拟物理会和AttachActor冲突
+	//我们无法保证掉落后立即拾取到低是模拟物理先执行到客户端, 还是AttachActor先执行到客户端(取决于网络)
+	//以防万一, 希望一定能AttachActor, 所以客户端在EquippedWeapon复制后再次执行AttachActor
+	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+	const USkeletalMeshSocket* HandSocket = OwnedCharacter->GetMesh()->GetSocketByName(FName("RightHandSocket"));
+	if (HandSocket)
+	{
+		HandSocket->AttachActor(EquippedWeapon, OwnedCharacter->GetMesh());
+	}
 	if (OwnedCharacter && EquippedWeapon)
 	{
 		//持有武器时不希望朝向运动方向(此处是来自服务器的Replicated通知)

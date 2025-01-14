@@ -34,6 +34,9 @@ public:
 	// 非虚拟函数会被子类同名函数隐藏, 编译器调用哪个取决于声明的指针或引用类型.
 	virtual void Fire(const FVector& HitTarget);
 
+	//武器掉落
+	void Dropped();
+
 	//武器的准星资源
 	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
 	class UTexture2D* CrosshairCenter;
