@@ -6,6 +6,7 @@
 #include "HUD/CharacterOverlay.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Characters/MultiShootCharacter.h"
 
 void AMultiShootPlayerController::SetHUDHealth(float InCurrentHealth, float InMaxHealth)
 {
@@ -23,6 +24,21 @@ void AMultiShootPlayerController::SetHUDHealth(float InCurrentHealth, float InMa
 
 		FString HealthText = FString::Printf(TEXT("%d/%d"), FMath::CeilToInt(InCurrentHealth), FMath::CeilToInt(InMaxHealth));
 		MultiHUD->CharacterOverlay->HealthText->SetText(FText::FromString(HealthText));
+	}
+}
+
+void AMultiShootPlayerController::OnPossess(APawn* aPawn)
+{
+	Super::OnPossess(aPawn);
+	if (aPawn)
+	{
+		AMultiShootCharacter* MultiShootCharacter = Cast<AMultiShootCharacter>(aPawn);
+		if (MultiShootCharacter)
+		{
+			// 效果应该是一样的, 上面更直观, 下面更合理
+			// MultiShootCharacter->UpdateHUDHealth();
+			SetHUDHealth(MultiShootCharacter->GetCurrentHealth(), MultiShootCharacter->GetMaxHealth());
+		}
 	}
 }
 

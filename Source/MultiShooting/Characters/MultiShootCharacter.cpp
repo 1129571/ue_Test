@@ -73,6 +73,8 @@ void AMultiShootCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//这个函数内部需要Controller, 在玩家重生时有可能Controller还在控制上一个Character, 所以会更新HUD失败
+	//处理办法是在Controller中OnPossess时对其控制的Character再次进行UpdateHUDHealth
 	UpdateHUDHealth();
 
 	//在服务器绑定OnTakeAnyDamage事件
