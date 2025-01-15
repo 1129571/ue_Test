@@ -22,8 +22,24 @@ void AMultiShootPlayerController::SetHUDHealth(float InCurrentHealth, float InMa
 		const float HealthPercent = InCurrentHealth / InMaxHealth;
 		MultiHUD->CharacterOverlay->HealthBar->SetPercent(HealthPercent);
 
-		FString HealthText = FString::Printf(TEXT("%d/%d"), FMath::CeilToInt(InCurrentHealth), FMath::CeilToInt(InMaxHealth));
-		MultiHUD->CharacterOverlay->HealthText->SetText(FText::FromString(HealthText));
+		FString HealthString = FString::Printf(TEXT("%d/%d"), FMath::CeilToInt(InCurrentHealth), FMath::CeilToInt(InMaxHealth));
+		MultiHUD->CharacterOverlay->HealthText->SetText(FText::FromString(HealthString));
+	}
+}
+
+void AMultiShootPlayerController::SetHUDScore(float InScore)
+{
+	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
+
+	bool bHUDValid = 
+		MultiHUD && 
+		MultiHUD->CharacterOverlay && 
+		MultiHUD->CharacterOverlay->ScoreAmount;
+
+	if (bHUDValid)
+	{
+		FString ScoreString = FString::Printf(TEXT("%d"), FMath::FloorToInt(InScore));
+		MultiHUD->CharacterOverlay->ScoreAmount->SetText(FText::FromString(ScoreString));
 	}
 }
 

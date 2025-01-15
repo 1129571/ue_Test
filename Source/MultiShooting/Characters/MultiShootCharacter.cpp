@@ -19,6 +19,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "PlayerState/MultiShootPlayerState.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -532,6 +533,9 @@ void AMultiShootCharacter::Tick(float DeltaTime)
 	}
 
 	HideCameraIfCharacterClose();
+
+	// 初始化HUD分数, 因为PlayerState要比BenginPlay晚
+	PollInit();
 }
 
 void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -611,6 +615,18 @@ void AMultiShootCharacter::PlayHitReactMontage()
 		FName SectionName;
 		SectionName = FName("FromLeft");
 		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void AMultiShootCharacter::PollInit()
+{
+	if (MultiShootPlayerState == nullptr)
+	{
+		MultiShootPlayerState = GetPlayerState<AMultiShootPlayerState>();
+		if (MultiShootPlayerState)
+		{
+			MultiShootPlayerState->AddToScore(0.f);
+		}
 	}
 }
 

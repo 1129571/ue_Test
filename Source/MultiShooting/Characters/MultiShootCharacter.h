@@ -50,6 +50,8 @@ protected:
 	void SimProxiesTurn();					//处理模拟角色--动画执行频率低, 旋转根骨骼会导致动画不流畅
 	virtual void Jump() override;
 	void PlayHitReactMontage();
+	// 初始化HUD相关内容
+	void PollInit();
 
 	UFUNCTION()
 	void ReceiveDamage(
@@ -179,6 +181,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	UParticleSystemComponent* ElimBotComponent;		//组件
+
+
+	class AMultiShootPlayerState* MultiShootPlayerState;
 
 public:	
 	void SetOverlappingWeapon(AWeapon* InWeapon);

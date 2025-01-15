@@ -16,6 +16,8 @@ class MULTISHOOTING_API AMultiShootPlayerController : public APlayerController
 	
 public:
 	void SetHUDHealth(float InCurrentHealth, float InMaxHealth);
+	void SetHUDScore(float InScore);
+
 	virtual void OnPossess(APawn* aPawn) override;
 
 protected:

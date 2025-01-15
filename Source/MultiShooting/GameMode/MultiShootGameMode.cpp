@@ -6,9 +6,19 @@
 #include "PlayerController/MultiShootPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
+#include "PlayerState/MultiShootPlayerState.h"
 
 void AMultiShootGameMode::PlayerEliminated(class AMultiShootCharacter* ElimmedCharacter, class AMultiShootPlayerController* VictimController, AMultiShootPlayerController* AttacherController)
 {
+	//当有玩家死亡时, 其伤害来源的玩家获得加分(自杀除外)
+	AMultiShootPlayerState* AttackerPlayerState = AttacherController ? Cast<AMultiShootPlayerState>(AttacherController->PlayerState) : nullptr;
+	AMultiShootPlayerState* VictimPlayerState = VictimController ? Cast<AMultiShootPlayerState>(VictimController->PlayerState) : nullptr;
+	if (AttackerPlayerState && AttackerPlayerState != VictimPlayerState)
+	{
+		AttackerPlayerState->AddToScore(1.f);
+	}
+
+	//处理被击杀的Character
 	if (ElimmedCharacter)
 	{
 		ElimmedCharacter->Elim();
