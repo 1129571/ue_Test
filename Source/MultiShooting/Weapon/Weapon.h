@@ -30,6 +30,10 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	virtual void OnRep_Owner() override;
+
+	void SetHUDWeaponAmmo();
+
 	// 只有Virtual函数才可以被重写
 	// 非虚拟函数会被子类同名函数隐藏, 编译器调用哪个取决于声明的指针或引用类型.
 	virtual void Fire(const FVector& HitTarget);
@@ -111,10 +115,31 @@ private:
 	UPROPERTY(EditAnywhere)
 	float ZoomInterpSpeed = 20.f;		//该武器的开镜速度
 
+	/**
+	 * 武器弹药
+	 */
+
+	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_CurrentAmmoNum)
+	int32 CurrentAmmoNum;
+
+	void SpendRound();			//CurrentAmmoNum--, 更新HUD		
+
+	UFUNCTION()
+	void OnRep_CurrentAmmoNum();
+
+	UPROPERTY(EditAnywhere)		//弹夹容量
+	int32 MagCapacity;
+
+	UPROPERTY()
+	class AMultiShootCharacter* OwnerCharacter;
+	UPROPERTY()
+	class AMultiShootPlayerController* OwnerController;
+
 public:
 	void SetWeaponState(EWeaponState NewWeaponState);
 	FORCEINLINE class USphereComponent* GetAreaSphere() const { return AreaSphere; }
 	FORCEINLINE class USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 	FORCEINLINE float GetWeaponZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetWeaponZoomInterpSpeed() const { return ZoomInterpSpeed; }
+	bool IsEmpty();
 };

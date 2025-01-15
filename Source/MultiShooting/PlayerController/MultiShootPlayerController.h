@@ -18,6 +18,7 @@ public:
 	void SetHUDHealth(float InCurrentHealth, float InMaxHealth);
 	void SetHUDScore(float InScore);			//这里使用float是因为Score是PlayerState提供的
 	void SetHUDDefeats(int32 InDefeatsAmount);
+	void SetHUDWeaponAmmoAmount(int32 InAmmoAmount);		//武器内的弹药, 和玩家携带的弹药区分开
 
 	virtual void OnPossess(APawn* aPawn) override;
 

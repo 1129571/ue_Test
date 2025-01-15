@@ -59,6 +59,13 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 {
 	if (WeaponToEquip == nullptr || OwnedCharacter == nullptr) return;
+
+	//防止同时装备多把武器
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->Dropped();
+	}
+
 	//设置已装备的武器
 	EquippedWeapon = WeaponToEquip;
 	//更新武器状态
@@ -73,6 +80,7 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 	// 通常用来标识某个 Actor 的控制者或拥有者。
 	// 通过设置所有者，可以方便地管理与该 Actor 相关的逻辑，比如权限、所有权、状态同步等。
 	EquippedWeapon->SetOwner(OwnedCharacter);
+	EquippedWeapon->SetHUDWeaponAmmo();
 
 	//持有武器时不希望朝向运动方向(此时只发生在服务器, 还需要本地设置)
 	OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
@@ -134,7 +142,7 @@ void UCombatComponent::ServerSetAiming_Implementation(bool InbAiming)
 
 void UCombatComponent::Fire()
 {
-	if (bCanFire)
+	if (CanFire())
 	{
 		bCanFire = false;
 		// Tick 中进行了击中目标检测, 并进行 HitTarget = TraceResult.ImpactPoint
@@ -169,6 +177,13 @@ void UCombatComponent::AutoFireTimerFinished()
 	{
 		Fire();
 	}
+}
+
+bool UCombatComponent::CanFire()
+{
+	if (EquippedWeapon == nullptr) return false;
+
+	return !EquippedWeapon->IsEmpty() && bCanFire;
 }
 
 //本地机器执行

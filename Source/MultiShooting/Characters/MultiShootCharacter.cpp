@@ -317,6 +317,12 @@ void AMultiShootCharacter::Destroyed()
 
 void AMultiShootCharacter::MulticastElim_Implementation()
 {
+	//武器弹药HUD
+	if (MultiShootPlayerController)
+	{
+		MultiShootPlayerController->SetHUDWeaponAmmoAmount(0);
+	}
+
 	bElimmed = true;
 	PlayElimMontage();
 
@@ -470,12 +476,9 @@ float AMultiShootCharacter::CalculateSpeed()
 
 void AMultiShootCharacter::SetOverlappingWeapon(AWeapon* InWeapon)
 {
-	if (IsLocallyControlled())
+	if (OverlappingWeapon)
 	{
-		if (!InWeapon)
-		{
-			OverlappingWeapon->ShowPickupWidget(false);
-		}
+		OverlappingWeapon->ShowPickupWidget(false);
 	}
 
 	OverlappingWeapon = InWeapon;

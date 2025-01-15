@@ -96,10 +96,12 @@ private:
 	* 自动开火相关
 	*/
 
-	bool bCanFire = true;
+	bool bCanFire = true;		// 是否正在开火
 
 	FTimerHandle AutoFireTimer;
 
 	void StartAutoFireTimer();
 	void AutoFireTimerFinished();
+
+	bool CanFire();
 };

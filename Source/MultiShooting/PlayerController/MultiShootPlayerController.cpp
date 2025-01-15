@@ -59,6 +59,22 @@ void AMultiShootPlayerController::SetHUDDefeats(int32 InDefeatsAmount)
 	}
 }
 
+void AMultiShootPlayerController::SetHUDWeaponAmmoAmount(int32 InAmmoAmount)
+{
+	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
+
+	bool bHUDValid =
+		MultiHUD &&
+		MultiHUD->CharacterOverlay &&
+		MultiHUD->CharacterOverlay->WeaponAmmoAmount;
+
+	if (bHUDValid)
+	{
+		FString AmmoString = FString::Printf(TEXT("%d"), InAmmoAmount);
+		MultiHUD->CharacterOverlay->WeaponAmmoAmount->SetText(FText::FromString(AmmoString));
+	}
+}
+
 void AMultiShootPlayerController::OnPossess(APawn* aPawn)
 {
 	Super::OnPossess(aPawn);

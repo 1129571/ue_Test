@@ -10,6 +10,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Casing.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Characters/MultiShootCharacter.h"
+#include "PlayerController/MultiShootPlayerController.h"
 
 AWeapon::AWeapon()
 {
@@ -73,32 +75,6 @@ void AWeapon::OnSphereEndOverlapCallback(UPrimitiveComponent* OverlappedComponen
 	}
 }
 
-//变量被复制时自动调用
-void AWeapon::OnRep_WeaponStateChange(EWeaponState LastState)
-{
-	switch (WeaponState)
-	{
-	case EWeaponState::EWS_Initial:
-		break;
-	case EWeaponState::EWS_Equipped:
-		ShowPickupWidget(false);
-		//防止Drop过程中玩家试图拾取时因为碰撞导致操作不流畅
-		WeaponMesh->SetSimulatePhysics(false);
-		WeaponMesh->SetEnableGravity(false);
-		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		break;
-	case EWeaponState::EWS_Dropped:
-		WeaponMesh->SetSimulatePhysics(true);
-		WeaponMesh->SetEnableGravity(true);
-		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		break;
-	case EWeaponState::EWS_MAX:
-		break;
-	default:
-		break;
-	}
-}
-
 //通过Character在服务器调用
 void AWeapon::SetWeaponState(EWeaponState NewWeaponState)
 {
@@ -125,18 +101,81 @@ void AWeapon::SetWeaponState(EWeaponState NewWeaponState)
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetEnableGravity(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		/////////////////////////////////////////
-		// 还有点问题, PickUpWidget的位置还是不对
 		// 设置组件之间的位置, 不然检测组件和控件组件永远在初始位置
 		AreaSphere->SetRelativeLocation(WeaponMesh->GetComponentLocation());
 		PickupWidget->SetRelativeLocation(WeaponMesh->GetComponentLocation());
-		///////////////////////////////////////////
 		break;
 	case EWeaponState::EWS_MAX:
 		break;
 	default:
 		break;
 	}
+}
+
+//变量被复制时自动调用
+void AWeapon::OnRep_WeaponStateChange(EWeaponState LastState)
+{
+	switch (WeaponState)
+	{
+	case EWeaponState::EWS_Initial:
+		break;
+	case EWeaponState::EWS_Equipped:
+		ShowPickupWidget(false);
+		//防止Drop过程中玩家试图拾取时因为碰撞导致操作不流畅
+		WeaponMesh->SetSimulatePhysics(false);
+		WeaponMesh->SetEnableGravity(false);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		break;
+	case EWeaponState::EWS_Dropped:
+		WeaponMesh->SetSimulatePhysics(true);
+		WeaponMesh->SetEnableGravity(true);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		// 设置组件之间的位置, 不然检测组件和控件组件永远在初始位置
+		AreaSphere->SetRelativeLocation(WeaponMesh->GetComponentLocation());
+		PickupWidget->SetRelativeLocation(WeaponMesh->GetComponentLocation());
+		break;
+	case EWeaponState::EWS_MAX:
+		break;
+	default:
+		break;
+	}
+}
+
+void AWeapon::SpendRound()
+{
+	//仅在服务器上执行
+	//更新当前弹药数量
+	CurrentAmmoNum = FMath::Clamp(CurrentAmmoNum - 1, 0, MagCapacity);
+
+	SetHUDWeaponAmmo();
+}
+
+void AWeapon::OnRep_CurrentAmmoNum()
+{
+	SetHUDWeaponAmmo();
+}
+
+void AWeapon::OnRep_Owner()
+{
+	Super::OnRep_Owner();
+
+	if (Owner == nullptr)
+	{
+		OwnerCharacter = nullptr;
+		OwnerController = nullptr;
+	}
+	else
+	{
+		// 确保武器被装备(客户端Owner被复制成功)了之后, 再尝试更新HUD
+
+		SetHUDWeaponAmmo();
+	}
+
+}
+
+bool AWeapon::IsEmpty()
+{
+	return CurrentAmmoNum <= 0;
 }
 
 void AWeapon::Tick(float DeltaTime)
@@ -147,7 +186,10 @@ void AWeapon::Tick(float DeltaTime)
 
 void AWeapon::ShowPickupWidget(bool bShouldShow)
 {
-	PickupWidget->SetVisibility(bShouldShow);
+	if (PickupWidget)
+	{
+		PickupWidget->SetVisibility(bShouldShow);
+	}
 }
 
 //注册要复制的变量
@@ -156,6 +198,21 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, WeaponState);
+	DOREPLIFETIME(AWeapon, CurrentAmmoNum);
+}
+
+void AWeapon::SetHUDWeaponAmmo()
+{
+	//尝试更新HUD
+	OwnerCharacter = OwnerCharacter == nullptr ? Cast<AMultiShootCharacter>(GetOwner()) : OwnerCharacter;
+	if (OwnerCharacter)
+	{
+		OwnerController = OwnerController == nullptr ? Cast<AMultiShootPlayerController>(OwnerCharacter->Controller) : OwnerController;
+		if (OwnerController)
+		{
+			OwnerController->SetHUDWeaponAmmoAmount(CurrentAmmoNum);
+		}
+	}
 }
 
 void AWeapon::Fire(const FVector& HitTarget)
@@ -183,6 +240,7 @@ void AWeapon::Fire(const FVector& HitTarget)
 			}
 		}
 	}
+	SpendRound();
 }
 
 void AWeapon::Dropped()
@@ -193,5 +251,7 @@ void AWeapon::Dropped()
 	WeaponMesh->DetachFromComponent(DetachRules);
 
 	SetOwner(nullptr);
+	OwnerCharacter = nullptr;
+	OwnerController = nullptr;
 }
 
