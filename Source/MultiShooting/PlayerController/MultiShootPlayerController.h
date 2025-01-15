@@ -16,7 +16,8 @@ class MULTISHOOTING_API AMultiShootPlayerController : public APlayerController
 	
 public:
 	void SetHUDHealth(float InCurrentHealth, float InMaxHealth);
-	void SetHUDScore(float InScore);
+	void SetHUDScore(float InScore);			//这里使用float是因为Score是PlayerState提供的
+	void SetHUDDefeats(int32 InDefeatsAmount);
 
 	virtual void OnPossess(APawn* aPawn) override;
 
@@ -25,6 +26,7 @@ protected:
 
 private:
 
+	UPROPERTY()
 	class AMultiShootHUD* MultiHUD;
 
 };

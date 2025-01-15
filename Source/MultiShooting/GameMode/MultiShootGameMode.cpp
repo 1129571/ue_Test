@@ -18,6 +18,11 @@ void AMultiShootGameMode::PlayerEliminated(class AMultiShootCharacter* ElimmedCh
 		AttackerPlayerState->AddToScore(1.f);
 	}
 
+	if (VictimPlayerState)
+	{
+		VictimPlayerState->AddToDefeats(1);
+	}
+
 	//处理被击杀的Character
 	if (ElimmedCharacter)
 	{

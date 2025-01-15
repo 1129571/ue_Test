@@ -11,10 +11,14 @@ struct FHUDPackage
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY()
 	class UTexture2D* CrosshairCenter;
 	UTexture2D* CrosshairLeft;
+	UPROPERTY()
 	UTexture2D* CrosshairRight;
+	UPROPERTY()
 	UTexture2D* CrosshairTop;
+	UPROPERTY()
 	UTexture2D* CrosshairBottom;
 
 	float CrosshairSpreadScale;			// 准星浮动基础缩放值, 多种因素影响

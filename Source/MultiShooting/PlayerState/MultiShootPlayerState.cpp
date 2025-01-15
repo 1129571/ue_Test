@@ -4,11 +4,12 @@
 #include "MultiShootPlayerState.h"
 #include "Characters/MultiShootCharacter.h"
 #include "PlayerController/MultiShootPlayerController.h"
+#include "Net/UnrealNetwork.h"
 
 
 void AMultiShootPlayerState::AddToScore(float InScore)
 {
-	Score += InScore;
+	SetScore(GetScore() + InScore);
 	Character = Character == nullptr ? Cast<AMultiShootCharacter>(GetPawn()) : Character;
 
 	if (Character)
@@ -16,7 +17,7 @@ void AMultiShootPlayerState::AddToScore(float InScore)
 		Controller = Controller == nullptr ? Cast<AMultiShootPlayerController>(Character->Controller) : Controller;
 		if (Controller)
 		{
-			Controller->SetHUDScore(Score);
+			Controller->SetHUDScore(GetScore());
 		}
 	}
 }
@@ -32,8 +33,45 @@ void AMultiShootPlayerState::OnRep_Score()
 		Controller = Controller == nullptr ? Cast<AMultiShootPlayerController>(Character->Controller) : Controller;
 		if (Controller)
 		{
-			Controller->SetHUDScore(Score);
+			Controller->SetHUDScore(GetScore());
 		}
 	}
 }
+
+void AMultiShootPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AMultiShootPlayerState, Defeats);
+}
+
+void AMultiShootPlayerState::OnRep_Defeats()
+{
+	Character = Character == nullptr ? Cast<AMultiShootCharacter>(GetPawn()) : Character;
+
+	if (Character)
+	{
+		Controller = Controller == nullptr ? Cast<AMultiShootPlayerController>(Character->Controller) : Controller;
+		if (Controller)
+		{
+			Controller->SetHUDDefeats(Defeats);
+		}
+	}
+}
+
+void AMultiShootPlayerState::AddToDefeats(int32 InDefeats)
+{
+	Defeats += InDefeats;
+	Character = Character == nullptr ? Cast<AMultiShootCharacter>(GetPawn()) : Character;
+
+	if (Character)
+	{
+		Controller = Controller == nullptr ? Cast<AMultiShootPlayerController>(Character->Controller) : Controller;
+		if (Controller)
+		{
+			Controller->SetHUDDefeats(Defeats);
+		}
+	}
+}
+
 

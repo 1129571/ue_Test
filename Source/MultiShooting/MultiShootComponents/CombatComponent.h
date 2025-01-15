@@ -50,8 +50,11 @@ protected:
 	void SetHUDCrossHairs(float DeltaTime);
 
 private:
+	UPROPERTY()
 	class AMultiShootCharacter* OwnedCharacter;
+	UPROPERTY()
 	class AMultiShootPlayerController* Controller;
+	UPROPERTY()
 	class AMultiShootHUD* HUD;
 
 	UPROPERTY(ReplicatedUsing = onRep_EquippedWeapon)

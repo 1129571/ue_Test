@@ -47,7 +47,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = Projectile)
 	class USoundCue* ImpactSound;		//命中音效
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	class UParticleSystemComponent* TracerComponent;
 
 };

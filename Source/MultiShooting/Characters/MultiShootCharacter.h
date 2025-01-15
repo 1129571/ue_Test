@@ -134,6 +134,7 @@ private:
 	UFUNCTION()
 	void OnRep_CurrentHealth();
 
+	UPROPERTY()
 	class AMultiShootPlayerController* MultiShootPlayerController;
 
 	//对于淘汰的Characte, 不再使用IK和旋转骨骼等动画
@@ -182,7 +183,7 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	UParticleSystemComponent* ElimBotComponent;		//组件
 
-
+	UPROPERTY()
 	class AMultiShootPlayerState* MultiShootPlayerState;
 
 public:	

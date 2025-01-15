@@ -626,6 +626,7 @@ void AMultiShootCharacter::PollInit()
 		if (MultiShootPlayerState)
 		{
 			MultiShootPlayerState->AddToScore(0.f);
+			MultiShootPlayerState->AddToDefeats(0);
 		}
 	}
 }
