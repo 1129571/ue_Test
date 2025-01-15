@@ -16,6 +16,9 @@
 #include "PlayerController/MultiShootPlayerController.h"
 #include "GameMode/MultiShootGameMode.h"
 #include "TimerManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
+#include "Particles/ParticleSystemComponent.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -289,12 +292,24 @@ void AMultiShootCharacter::Elim()
 		Combat->EquippedWeapon->Dropped();
 	}
 	MulticastElim();
+
 	GetWorldTimerManager().SetTimer(
 		ElimTimer,
 		this,
 		&ThisClass::ElimTimerFinished,
 		ElimDelay
 	);
+}
+
+void AMultiShootCharacter::Destroyed()
+{
+	Super::Destroyed();
+
+	//销毁ElimBot粒子组件
+	if (ElimBotComponent)
+	{
+		ElimBotComponent->DestroyComponent();
+	}
 }
 
 void AMultiShootCharacter::MulticastElim_Implementation()
@@ -324,11 +339,33 @@ void AMultiShootCharacter::MulticastElim_Implementation()
 	//禁用角色碰撞
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	//生成ElimBot
+	if (ElimBotEffect)
+	{
+		FVector ElimBotSpawnPoint(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + 200.f);
+		ElimBotComponent = UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(), 
+			ElimBotEffect,
+			ElimBotSpawnPoint,
+			GetActorRotation()
+			);
+	}
+	//ElimBot声音
+	if (ElimBotSound)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(
+			this,
+			ElimBotSound,
+			GetActorLocation()
+		);
+	}
 }
 
 void AMultiShootCharacter::ElimTimerFinished()
 {
 	AMultiShootGameMode* MultiShootGameMode = GetWorld()->GetAuthGameMode<AMultiShootGameMode>();
+	//玩家重生
 	if (MultiShootGameMode)
 	{
 		MultiShootGameMode->RequestRespawn(this, GetController());
@@ -604,7 +641,7 @@ void AMultiShootCharacter::OnRep_CurrentHealth()
 
 void AMultiShootCharacter::UpdateHUDHealth()
 {
-	MultiShootPlayerController = MultiShootPlayerController == nullptr ? Cast<AMultiShootPlayerController>(GetController()) : MultiShootPlayerController;
+	MultiShootPlayerController = MultiShootPlayerController == nullptr ? Cast<AMultiShootPlayerController>(Controller) : MultiShootPlayerController;
 	if (MultiShootPlayerController)
 	{
 		MultiShootPlayerController->SetHUDHealth(CurrentHealth, MaxHealth);

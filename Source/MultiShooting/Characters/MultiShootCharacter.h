@@ -30,6 +30,7 @@ public:
 	void Elim();						//Do Something Only On Server
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
+	virtual void Destroyed() override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -167,6 +168,17 @@ private:
 	//在蓝图上设置的, 通过它创建动态材质实例, 便于在运行时对材质进行修改
 	UPROPERTY(EditAnywhere, Category="Character|Elim")
 	UMaterialInstance* DissolveMaterialInstance;
+
+	/**
+	 * 死亡时(回收Character的机器人)的特效
+	 */
+	UPROPERTY(EditAnywhere)
+	UParticleSystem* ElimBotEffect;					//资产
+	UPROPERTY(EditAnywhere)
+	USoundCue* ElimBotSound;
+
+	UPROPERTY(VisibleAnywhere)
+	UParticleSystemComponent* ElimBotComponent;		//组件
 
 public:	
 	void SetOverlappingWeapon(AWeapon* InWeapon);

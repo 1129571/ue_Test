@@ -17,10 +17,8 @@ AWeapon::AWeapon()
 	// 我们将武器设计为服务器负责, 此处开启复制
 	bReplicates = true;
 
-	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-	WeaponMesh->SetupAttachment(RootComponent);
+	SetRootComponent(WeaponMesh);
 	//相当于碰撞设置
 	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);				//所有碰撞通道Block
 	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);		//忽略Pawn通道
@@ -84,7 +82,6 @@ void AWeapon::OnRep_WeaponStateChange(EWeaponState LastState)
 		break;
 	case EWeaponState::EWS_Equipped:
 		ShowPickupWidget(false);
-		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		//防止Drop过程中玩家试图拾取时因为碰撞导致操作不流畅
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetEnableGravity(false);
@@ -114,7 +111,7 @@ void AWeapon::SetWeaponState(EWeaponState NewWeaponState)
 		//拾取武器后就不再显示PickupWidget了
 		ShowPickupWidget(false);
 		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		//防止Drop过程中玩家试图拾取时因为碰撞导致操作不流畅
+		//防止Drop过程中玩家试图拾取时因为碰撞导致异常
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetEnableGravity(false);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -128,6 +125,12 @@ void AWeapon::SetWeaponState(EWeaponState NewWeaponState)
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetEnableGravity(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		/////////////////////////////////////////
+		// 还有点问题, PickUpWidget的位置还是不对
+		// 设置组件之间的位置, 不然检测组件和控件组件永远在初始位置
+		AreaSphere->SetRelativeLocation(WeaponMesh->GetComponentLocation());
+		PickupWidget->SetRelativeLocation(WeaponMesh->GetComponentLocation());
+		///////////////////////////////////////////
 		break;
 	case EWeaponState::EWS_MAX:
 		break;
