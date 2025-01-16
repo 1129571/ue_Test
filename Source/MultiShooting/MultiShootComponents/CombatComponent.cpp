@@ -111,15 +111,8 @@ void UCombatComponent::Reload()
 	}
 }
 
-void UCombatComponent::FinishedReloading()
-{
-	if (OwnedCharacter == nullptr) return;
-	if (OwnedCharacter->HasAuthority())
-	{
-		CombatState = ECombatState::ECS_Unoccupied;
-	}
-}
-
+//Client 调用 会在Server执行
+//Server 调用 会在Server执行
 void UCombatComponent::ServerReload_Implementation()
 {
 	if (OwnedCharacter == nullptr) return;
@@ -134,6 +127,13 @@ void UCombatComponent::OnRep_CombatState()
 	case ECombatState::ECS_Reloading:
 		HandleReload();
 		break;
+	case ECombatState::ECS_Unoccupied:
+		//换弹完成, 继续开火(客户端变量被复制时)
+		if (bFireButtonPressed)
+		{
+			Fire();
+		}
+		break;
 	}
 }
 
@@ -143,6 +143,20 @@ void UCombatComponent::HandleReload()
 	OwnedCharacter->PlayReloadMontage();
 
 	//Weapon 换弹
+}
+
+void UCombatComponent::FinishedReloading()
+{
+	if (OwnedCharacter == nullptr) return;
+	if (OwnedCharacter->HasAuthority())
+	{
+		CombatState = ECombatState::ECS_Unoccupied;
+	}
+	//换弹完成, 继续开火, CombatState是复制的, 所以还需要再OnRep处理客户端被复制的人逻辑
+	if (bFireButtonPressed)
+	{
+		Fire();
+	}
 }
 
 void UCombatComponent::onRep_EquippedWeapon()
@@ -244,7 +258,12 @@ bool UCombatComponent::CanFire()
 {
 	if (EquippedWeapon == nullptr) return false;
 
-	return !EquippedWeapon->IsEmpty() && bCanFire;
+	bool bResult =
+		!EquippedWeapon->IsEmpty() &&
+		bCanFire &&
+		CombatState == ECombatState::ECS_Unoccupied;
+
+	return bResult;
 }
 
 void UCombatComponent::OnRep_CarriedAmmo()
@@ -283,7 +302,10 @@ void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& InHi
 //所有客户端执行
 void UCombatComponent::MultiCastFire_Implementation(const FVector_NetQuantize& InHitTarget)
 {
-	if (OwnedCharacter && EquippedWeapon)
+	if (EquippedWeapon == nullptr) return;
+
+	//保证Fire动画不会打断Reload1动画(自动武器Reload过程持续按住左键时)
+	if (OwnedCharacter && CombatState == ECombatState::ECS_Unoccupied)
 	{
 		//Character和Weapon各自处理开火逻辑
 		OwnedCharacter->PlayFireMontage(bIsAiming);
