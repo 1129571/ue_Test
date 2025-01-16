@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "HUD/MultiShootHUD.h"
+#include "Weapon/WeaponTypes.h"
 #include "CombatComponent.generated.h"
 
 #define TRACE_LENGTH 80000
@@ -104,4 +105,20 @@ private:
 	void AutoFireTimerFinished();
 
 	bool CanFire();
+
+	/**
+	 * 携带弹药
+	 */
+
+	//为当前装备的武器所携带的弹药数量
+	UPROPERTY(ReplicatedUsing = OnRep_CarriedAmmo)
+	int32 CarriedAmmo;
+
+	UFUNCTION()
+	void OnRep_CarriedAmmo();
+
+	TMap<EWeaponType, int32> CarriedAmmoMap;		//武器类型--携带弹药数量, 由于Hash特性, TMap无法复制
+	UPROPERTY(EditAnywhere)
+	int32 StartingAmmo = 30;
+	void InitializeCarriedAmmo();
 };

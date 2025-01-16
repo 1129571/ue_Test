@@ -34,6 +34,11 @@ void UCombatComponent::BeginPlay()
 			DefaultFOV = OwnedCharacter->GetFollowCamera()->FieldOfView;
 			CurrnetFOV = DefaultFOV;
 		}
+
+		if (OwnedCharacter->HasAuthority())
+		{
+			InitializeCarriedAmmo();
+		}
 	}
 }
 
@@ -82,6 +87,17 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 	EquippedWeapon->SetOwner(OwnedCharacter);
 	EquippedWeapon->SetHUDWeaponAmmo();
 
+	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
+	{
+		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
+	}
+
+	Controller = Controller == nullptr ? Cast<AMultiShootPlayerController>(OwnedCharacter->Controller) : Controller;
+	if (Controller)
+	{
+		Controller->SetHUDCarriedAmmoAmount(CarriedAmmo);
+	}
+
 	//持有武器时不希望朝向运动方向(此时只发生在服务器, 还需要本地设置)
 	OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
 	OwnedCharacter->bUseControllerRotationYaw = true;
@@ -115,6 +131,8 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
 	DOREPLIFETIME(UCombatComponent, bIsAiming);
+	//只有Owner关心这个数据,因为需要显示到HUD, 其他可以不用复制, 避免额外网络占用
+	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);
 }
 
 void UCombatComponent::SetAiming(bool InbAiming)
@@ -184,6 +202,20 @@ bool UCombatComponent::CanFire()
 	if (EquippedWeapon == nullptr) return false;
 
 	return !EquippedWeapon->IsEmpty() && bCanFire;
+}
+
+void UCombatComponent::OnRep_CarriedAmmo()
+{
+	Controller = Controller == nullptr ? Cast<AMultiShootPlayerController>(OwnedCharacter->Controller) : Controller;
+	if (Controller)
+	{
+		Controller->SetHUDCarriedAmmoAmount(CarriedAmmo);
+	}
+}
+
+void UCombatComponent::InitializeCarriedAmmo()
+{
+	CarriedAmmoMap.Emplace(EWeaponType::EWT_AssaultRifle, StartingAmmo);
 }
 
 //本地机器执行

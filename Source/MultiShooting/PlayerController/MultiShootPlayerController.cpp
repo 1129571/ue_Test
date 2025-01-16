@@ -59,7 +59,7 @@ void AMultiShootPlayerController::SetHUDDefeats(int32 InDefeatsAmount)
 	}
 }
 
-void AMultiShootPlayerController::SetHUDWeaponAmmoAmount(int32 InAmmoAmount)
+void AMultiShootPlayerController::SetHUDWeaponAmmoAmount(int32 InWeaponAmmoAmount)
 {
 	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
 
@@ -70,8 +70,24 @@ void AMultiShootPlayerController::SetHUDWeaponAmmoAmount(int32 InAmmoAmount)
 
 	if (bHUDValid)
 	{
-		FString AmmoString = FString::Printf(TEXT("%d"), InAmmoAmount);
-		MultiHUD->CharacterOverlay->WeaponAmmoAmount->SetText(FText::FromString(AmmoString));
+		FString WeaponAmmoString = FString::Printf(TEXT("%d"), InWeaponAmmoAmount);
+		MultiHUD->CharacterOverlay->WeaponAmmoAmount->SetText(FText::FromString(WeaponAmmoString));
+	}
+}
+
+void AMultiShootPlayerController::SetHUDCarriedAmmoAmount(int32 InCarriedAmmoAmount)
+{
+	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
+
+	bool bHUDValid =
+		MultiHUD &&
+		MultiHUD->CharacterOverlay &&
+		MultiHUD->CharacterOverlay->CarriedAmmoAmount;
+
+	if (bHUDValid)
+	{
+		FString CarriedAmmoString = FString::Printf(TEXT("%d"), InCarriedAmmoAmount);
+		MultiHUD->CharacterOverlay->CarriedAmmoAmount->SetText(FText::FromString(CarriedAmmoString));
 	}
 }
 
