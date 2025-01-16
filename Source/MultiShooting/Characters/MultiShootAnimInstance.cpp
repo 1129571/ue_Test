@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Weapon/Weapon.h"
+#include "MultiShootTypes/CombatState.h"
 
 void UMultiShootAnimInstance::NativeInitializeAnimation()
 {
@@ -93,4 +94,7 @@ void UMultiShootAnimInstance::NativeUpdateAnimation(float DeltaTime)
 			RightHandRotation = FMath::RInterpTo(RightHandRotation, LookAtRotation, DeltaTime, 30.f);
 		}
 	}
+
+	// Reload 时就不应该继续使用IK
+	bUseFABRIK = MultiShootCharacter->GetCombatState() != ECombatState::ECS_Reloading;
 }

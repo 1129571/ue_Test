@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "HUD/MultiShootHUD.h"
 #include "Weapon/WeaponTypes.h"
+#include "MultiShootTypes/CombatState.h"
 #include "CombatComponent.generated.h"
 
 #define TRACE_LENGTH 80000
@@ -21,6 +22,10 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	friend class AMultiShootCharacter;
 	void EquipWeaponFun(class AWeapon* WeaponToEquip);
+	void Reload();
+
+	UFUNCTION(BlueprintCallable)
+	void FinishedReloading();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -49,6 +54,12 @@ protected:
 	void TraceUnderCrosshairs(FHitResult& TraceResult);
 
 	void SetHUDCrossHairs(float DeltaTime);
+
+	UFUNCTION(Server, Reliable)
+	void ServerReload();
+
+	//处理Client和Server
+	void HandleReload();
 
 private:
 	UPROPERTY()
@@ -121,4 +132,10 @@ private:
 	UPROPERTY(EditAnywhere)
 	int32 StartingAmmo = 30;
 	void InitializeCarriedAmmo();
+
+	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
+	ECombatState CombatState = ECombatState::ECS_Unoccupied;
+
+	UFUNCTION()
+	void OnRep_CombatState();
 };

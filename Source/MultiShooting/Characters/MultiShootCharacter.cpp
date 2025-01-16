@@ -20,6 +20,7 @@
 #include "Sound/SoundCue.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "PlayerState/MultiShootPlayerState.h"
+#include "Weapon/WeaponTypes.h"
 
 AMultiShootCharacter::AMultiShootCharacter()
 {
@@ -144,6 +145,14 @@ void AMultiShootCharacter::CrouchPressed()
 	else
 	{
 		Crouch();
+	}
+}
+
+void AMultiShootCharacter::ReloadPressed()
+{
+	if (Combat)
+	{
+		Combat->Reload();
 	}
 }
 
@@ -517,6 +526,12 @@ FVector AMultiShootCharacter::GetHitTarget() const
 	return Combat->HitTarget;
 }
 
+ECombatState AMultiShootCharacter::GetCombatState() const
+{
+	if (Combat == nullptr) return ECombatState::ECS_MAX;
+	return Combat->CombatState;
+}
+
 void AMultiShootCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -548,6 +563,7 @@ void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ThisClass::Jump);
 	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &ThisClass::EquipWeaponPressed);
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ThisClass::CrouchPressed);
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ThisClass::ReloadPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &ThisClass::AimPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &ThisClass::AimReleased);
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ThisClass::FirePressed);
@@ -618,6 +634,27 @@ void AMultiShootCharacter::PlayHitReactMontage()
 		FName SectionName;
 		SectionName = FName("FromLeft");
 		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void AMultiShootCharacter::PlayReloadMontage()
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && ReloadMontage)
+	{
+		AnimInstance->Montage_Play(ReloadMontage);
+
+		FName SelectName;		//不同武器类型的换弹动画不一样, 使用不同的Montage Select
+		switch (Combat->EquippedWeapon->GetWeaponType())
+		{
+		case EWeaponType::EWT_AssaultRifle:
+			SelectName = FName("Rifle");
+			break;
+		}
+
+		AnimInstance->Montage_JumpToSection(SelectName);
 	}
 }
 

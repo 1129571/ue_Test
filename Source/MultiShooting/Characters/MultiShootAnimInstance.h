@@ -85,4 +85,7 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Category = "Elimmed", meta = (AllowPrivateAccess = "true"))
 	bool bElimmed;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Elimmed", meta = (AllowPrivateAccess = "true"))
+	bool bUseFABRIK;			//如Reload时就不应该使用IK, 否则左手动画不能正常播放
 };

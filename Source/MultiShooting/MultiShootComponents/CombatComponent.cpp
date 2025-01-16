@@ -103,6 +103,48 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 	OwnedCharacter->bUseControllerRotationYaw = true;
 }
 
+void UCombatComponent::Reload()
+{
+	if (CarriedAmmo > 0 && CombatState != ECombatState::ECS_Reloading)
+	{
+		ServerReload();
+	}
+}
+
+void UCombatComponent::FinishedReloading()
+{
+	if (OwnedCharacter == nullptr) return;
+	if (OwnedCharacter->HasAuthority())
+	{
+		CombatState = ECombatState::ECS_Unoccupied;
+	}
+}
+
+void UCombatComponent::ServerReload_Implementation()
+{
+	if (OwnedCharacter == nullptr) return;
+	CombatState = ECombatState::ECS_Reloading;
+	HandleReload();
+}
+
+void UCombatComponent::OnRep_CombatState()
+{
+	switch (CombatState)
+	{
+	case ECombatState::ECS_Reloading:
+		HandleReload();
+		break;
+	}
+}
+
+void UCombatComponent::HandleReload()
+{
+	//Character播放Reload动画
+	OwnedCharacter->PlayReloadMontage();
+
+	//Weapon 换弹
+}
+
 void UCombatComponent::onRep_EquippedWeapon()
 {
 	
@@ -133,6 +175,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(UCombatComponent, bIsAiming);
 	//只有Owner关心这个数据,因为需要显示到HUD, 其他可以不用复制, 避免额外网络占用
 	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);
+	DOREPLIFETIME(UCombatComponent, CombatState);
 }
 
 void UCombatComponent::SetAiming(bool InbAiming)

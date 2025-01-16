@@ -7,6 +7,7 @@
 #include "MultiShootTypes/TurningInPlace.h"
 #include "Interface/CrosshairInterface.h"
 #include "Components/TimeLineComponent.h"
+#include "MultiShootTypes/CombatState.h"
 #include "MultiShootCharacter.generated.h"
 
 UCLASS()
@@ -24,6 +25,7 @@ public:
 	virtual void PostInitializeComponents() override;
 	void PlayFireMontage(bool bAiming);
 	void PlayElimMontage();
+	void PlayReloadMontage();
 	//Actor 运动发生变化时调用
 	virtual void OnRep_ReplicatedMovement() override;
 	//玩家淘汰
@@ -41,6 +43,7 @@ protected:
 	void LookUp(float AxisValue);
 	void EquipWeaponPressed();
 	void CrouchPressed();
+	void ReloadPressed();
 	void AimPressed();
 	void AimReleased();
 	void FirePressed();
@@ -73,7 +76,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverHeadWidget;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UCombatComponent* Combat;
 
 	// 标记为需要复制的变量
@@ -93,6 +96,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Character|Animation")
 	class UAnimMontage* ElimMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Character|Animation")
+	class UAnimMontage* ReloadMontage;
 
 	//用于在AimOffset(-90, 90)超出时原地转身
 	ETurningInPlace TurningInPlace;
@@ -201,4 +207,5 @@ public:
 	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 	FVector GetHitTarget() const;
+	ECombatState GetCombatState() const;
 };
