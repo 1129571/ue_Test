@@ -13,7 +13,6 @@ class MULTISHOOTING_API ACasing : public AActor
 	
 public:	
 	ACasing();
-	virtual void Destroyed() override;
 
 protected:
 	virtual void BeginPlay() override;

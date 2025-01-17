@@ -48,16 +48,10 @@ void ACasing::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrim
 
 	bFirstHit = false;
 
-	GetWorld()->GetTimerManager().SetTimer(DestroyTimeHandle, this, &ThisClass::DestroyFun, 1.5f, false);
+	GetWorld()->GetTimerManager().SetTimer(DestroyTimeHandle, this, &ThisClass::DestroyFun, 1.5f);
 }
 
 void ACasing::DestroyFun()
 {
 	Destroy();
-}
-
-void ACasing::Destroyed()
-{
-	Super::Destroyed();
-	GetWorldTimerManager().ClearTimer(DestroyTimeHandle);
 }

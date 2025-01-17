@@ -104,6 +104,11 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 		UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, OwnedCharacter->GetActorLocation());
 	}
 
+	if (EquippedWeapon->IsEmpty())
+	{
+		Reload();
+	}
+
 	//持有武器时不希望朝向运动方向(此时只发生在服务器, 还需要本地设置)
 	OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
 	OwnedCharacter->bUseControllerRotationYaw = true;
@@ -265,57 +270,6 @@ void UCombatComponent::ServerSetAiming_Implementation(bool InbAiming)
 	}
 }
 
-void UCombatComponent::Fire()
-{
-	if (CanFire())
-	{
-		bCanFire = false;
-		// Tick 中进行了击中目标检测, 并进行 HitTarget = TraceResult.ImpactPoint
-		// TraceResult.ImpactPoint 已经是FVector_NetQuantize类型了
-		ServerFire(HitTarget);
-
-		//开火时本地机器增加射击因子(用于HUD散开程度)
-		if (EquippedWeapon)
-		{
-			CrosshairShootingFactor = 2.f;
-		}
-		StartAutoFireTimer();
-	}
-}
-
-void UCombatComponent::StartAutoFireTimer()
-{
-	if (EquippedWeapon == nullptr || OwnedCharacter == nullptr) return;
-	OwnedCharacter->GetWorldTimerManager().SetTimer(
-		AutoFireTimer,
-		this,
-		&ThisClass::AutoFireTimerFinished,
-		EquippedWeapon->AutoFireDelay
-	);
-}
-
-void UCombatComponent::AutoFireTimerFinished()
-{
-	if (EquippedWeapon == nullptr) return;
-	bCanFire = true;
-	if (bFireButtonPressed && EquippedWeapon->bCanAutoFire)
-	{
-		Fire();
-	}
-}
-
-bool UCombatComponent::CanFire()
-{
-	if (EquippedWeapon == nullptr) return false;
-
-	bool bResult =
-		!EquippedWeapon->IsEmpty() &&
-		bCanFire &&
-		CombatState == ECombatState::ECS_Unoccupied;
-
-	return bResult;
-}
-
 void UCombatComponent::OnRep_CarriedAmmo()
 {
 	Controller = Controller == nullptr ? Cast<AMultiShootPlayerController>(OwnedCharacter->Controller) : Controller;
@@ -341,6 +295,64 @@ void UCombatComponent::WeaponFire(bool bFire)
 	{
 		Fire();
 	}
+}
+
+void UCombatComponent::Fire()
+{
+	if (CanFire())
+	{
+		bCanFire = false;
+		// Tick 中进行了击中目标检测, 并进行 HitTarget = TraceResult.ImpactPoint
+		// TraceResult.ImpactPoint 已经是FVector_NetQuantize类型了
+		ServerFire(HitTarget);
+		//相当于立即响应一次后开始执行定时器
+		StartAutoFireTimer();
+
+		//开火时本地机器增加射击因子(用于HUD散开程度)
+		if (EquippedWeapon)
+		{
+			CrosshairShootingFactor = 2.f;
+		}
+	}
+}
+
+void UCombatComponent::StartAutoFireTimer()
+{
+	if (EquippedWeapon == nullptr || OwnedCharacter == nullptr) return;
+	//不循环, 延迟后调用该函数
+	OwnedCharacter->GetWorldTimerManager().SetTimer(
+		AutoFireTimer,
+		this,
+		&ThisClass::AutoFireTimerFinished,
+		EquippedWeapon->AutoFireDelay
+	);
+}
+
+void UCombatComponent::AutoFireTimerFinished()
+{
+	if (EquippedWeapon == nullptr) return;
+	bCanFire = true;
+	if (bFireButtonPressed && EquippedWeapon->bCanAutoFire)
+	{
+		Fire();
+	}
+	//自动换弹
+	if (EquippedWeapon->IsEmpty())
+	{
+		Reload();
+	}
+}
+
+bool UCombatComponent::CanFire()
+{
+	if (EquippedWeapon == nullptr) return false;
+
+	bool bResult =
+		!EquippedWeapon->IsEmpty() &&
+		bCanFire &&
+		CombatState == ECombatState::ECS_Unoccupied;
+
+	return bResult;
 }
 
 //服务器执行
