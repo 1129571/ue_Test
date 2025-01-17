@@ -8,6 +8,38 @@
 #include "GameFramework/PlayerStart.h"
 #include "PlayerState/MultiShootPlayerState.h"
 
+AMultiShootGameMode::AMultiShootGameMode()
+{
+	//Match State 会停留在WaitingToStart, 直到我们手动调用StartMatch()
+	//这期间不会自动生成GameMode指定的Pawn, 而是生成DefaultPawn
+	bDelayedStart = true;
+}
+
+void AMultiShootGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+
+	//这时候会进入Map
+	LevelStaringTime = GetWorld()->GetTimeSeconds();
+}
+
+void AMultiShootGameMode::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (MatchState == MatchState::WaitingToStart)
+	{
+		//希望从BeginPlay开始热身倒计时
+		CountdownTime = WarmupTime - GetWorld()->GetTimeSeconds() + LevelStaringTime;
+		if (CountdownTime <= 0)
+		{
+			//进入游戏, InProgress状态
+			StartMatch();
+		}
+	}
+
+}
+
 void AMultiShootGameMode::PlayerEliminated(class AMultiShootCharacter* ElimmedCharacter, class AMultiShootPlayerController* VictimController, AMultiShootPlayerController* AttacherController)
 {
 	//当有玩家死亡时, 其伤害来源的玩家获得加分(自杀除外)
@@ -47,3 +79,4 @@ void AMultiShootGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AControll
 		RestartPlayerAtPlayerStart(ElimmedController, OutPlayerStarts[Selection]);
 	}
 }
+

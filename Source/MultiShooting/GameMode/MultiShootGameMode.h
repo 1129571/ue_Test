@@ -15,6 +15,15 @@ class MULTISHOOTING_API AMultiShootGameMode : public AGameMode
 	GENERATED_BODY()
 	
 public:
+	AMultiShootGameMode();
+
+	virtual void Tick(float DeltaSeconds) override;
+
+	float LevelStaringTime = 0.f;		//地图打开的时间, 热身时间要从地图打开开始
+
+	UPROPERTY(EditAnywhere)
+	float WarmupTime = 10.f;			//热身时间
+
 	/**
 	 * 玩家淘汰时将其从游戏移除
 	 * @param ElimmedCharacter 淘汰被移除的Character
@@ -28,4 +37,10 @@ public:
 	);
 
 	virtual void RequestRespawn(ACharacter* ElimmedCharacter, AController* ElimmedController);
+
+protected:
+	virtual void BeginPlay() override;
+
+private:
+	float CountdownTime = 0.f;		//Tick 记录当前的热身时间
 };
