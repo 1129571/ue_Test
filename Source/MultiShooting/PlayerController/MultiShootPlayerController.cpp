@@ -8,6 +8,43 @@
 #include "Components/TextBlock.h"
 #include "Characters/MultiShootCharacter.h"
 
+//处理客户端与服务器之间的连接以及玩家身份的初始化。
+//我们希望尽早获取到CS时间差量
+void AMultiShootPlayerController::ReceivedPlayer()
+{
+	Super::ReceivedPlayer();
+	if (IsLocalController())
+	{
+		ServerRequestServerTime(GetWorld()->GetTimeSeconds());
+	}
+}
+
+void AMultiShootPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	MultiHUD = Cast<AMultiShootHUD>(GetHUD());
+}
+
+void AMultiShootPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	SetHUDTime();
+	CheckTimeSync(DeltaTime);
+}
+
+void AMultiShootPlayerController::CheckTimeSync(float DeltaTime)
+{
+	//每隔TimeSyncFrequency进行一次时间同步
+	TimeSyncRunningTime += DeltaTime;
+	if (IsLocalController() && TimeSyncRunningTime > TimeSyncFrequency)
+	{
+		ServerRequestServerTime(GetWorld()->GetTimeSeconds()); 
+		TimeSyncRunningTime = 0.f;
+	}
+}
+
 void AMultiShootPlayerController::SetHUDHealth(float InCurrentHealth, float InMaxHealth)
 {
 	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
@@ -91,6 +128,25 @@ void AMultiShootPlayerController::SetHUDCarriedAmmoAmount(int32 InCarriedAmmoAmo
 	}
 }
 
+void AMultiShootPlayerController::SetHUDMatchCountdown(float InCountdownTime)
+{
+	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
+
+	bool bHUDValid =
+		MultiHUD &&
+		MultiHUD->CharacterOverlay &&
+		MultiHUD->CharacterOverlay->GameTimeText;
+
+	if (bHUDValid)
+	{
+		int32 Minutes = FMath::FloorToInt(InCountdownTime / 60.f);
+		int32 Seconds = InCountdownTime - Minutes * 60.f;
+
+		FString MatchCountdownString = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
+		MultiHUD->CharacterOverlay->GameTimeText->SetText(FText::FromString(MatchCountdownString));
+	}
+}
+
 void AMultiShootPlayerController::OnPossess(APawn* aPawn)
 {
 	Super::OnPossess(aPawn);
@@ -106,9 +162,39 @@ void AMultiShootPlayerController::OnPossess(APawn* aPawn)
 	}
 }
 
-void AMultiShootPlayerController::BeginPlay()
+void AMultiShootPlayerController::SetHUDTime()
 {
-	Super::BeginPlay();
+	uint32 SecondsLeft = FMath::CeilToInt(MatchTime - GetServerTime());
 
-	MultiHUD = Cast<AMultiShootHUD>(GetHUD());
+	// 只有剩余时间(S)变化时才更新HUD
+	if (SecondsLeft != CountdowmInt)
+	{
+		SetHUDMatchCountdown(MatchTime - GetServerTime());
+	}
+		
+	CountdowmInt = SecondsLeft;
 }
+
+void AMultiShootPlayerController::ServerRequestServerTime_Implementation(float TimeOfClientRequest)
+{
+	float ServerTimeOfReceipt = GetWorld()->GetTimeSeconds();
+	ClientReportServerTime(TimeOfClientRequest, ServerTimeOfReceipt);
+}
+
+void AMultiShootPlayerController::ClientReportServerTime_Implementation(float TimeOfClientRequest, float TimeServerReceivedClientRequest)
+{
+	// 客户端发起ServerRPC 到 服务器调用ClientRPC 所花的时间
+	float RoundTripTime = GetWorld()->GetTimeSeconds() - TimeOfClientRequest;
+	// 服务器当前时间(ClientRPC接收的瞬间), 这里认为ServerRPC和ClientRPC所花的时间是一致的
+	float CurrentServerTime = TimeServerReceivedClientRequest + (0.5f * RoundTripTime);
+	// 客户端和服务器的时间差量
+	ClientServerDelta = CurrentServerTime - GetWorld()->GetTimeSeconds();
+}
+
+//通过客户端当前时间 + CS时间差量可以获取到服务器时间
+float AMultiShootPlayerController::GetServerTime()
+{
+	if (HasAuthority()) return GetWorld()->GetTimeSeconds();
+	else return GetWorld()->GetTimeSeconds() + ClientServerDelta;
+}
+
