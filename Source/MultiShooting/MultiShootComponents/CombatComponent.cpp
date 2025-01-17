@@ -13,6 +13,7 @@
 #include "PlayerController/MultiShootPlayerController.h"
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
+#include "Sound/SoundCue.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -98,9 +99,41 @@ void UCombatComponent::EquipWeaponFun(AWeapon* WeaponToEquip)
 		Controller->SetHUDCarriedAmmoAmount(CarriedAmmo);
 	}
 
+	if (EquippedWeapon->EquipSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, OwnedCharacter->GetActorLocation());
+	}
+
 	//持有武器时不希望朝向运动方向(此时只发生在服务器, 还需要本地设置)
 	OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
 	OwnedCharacter->bUseControllerRotationYaw = true;
+}
+
+void UCombatComponent::onRep_EquippedWeapon()
+{
+
+	if (OwnedCharacter && EquippedWeapon)
+	{
+		//为什么还要在客户端执行将Weapon附加到Socket?
+		//因为武器掉落会启用模拟物理, 而模拟物理会和AttachActor冲突
+		//我们无法保证掉落后立即拾取到低是模拟物理先执行到客户端, 还是AttachActor先执行到客户端(取决于网络)
+		//以防万一, 希望一定能AttachActor, 所以客户端在EquippedWeapon复制后再次执行AttachActor
+		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+		const USkeletalMeshSocket* HandSocket = OwnedCharacter->GetMesh()->GetSocketByName(FName("RightHandSocket"));
+		if (HandSocket)
+		{
+			HandSocket->AttachActor(EquippedWeapon, OwnedCharacter->GetMesh());
+		}
+
+		//持有武器时不希望朝向运动方向(此处是来自服务器的Replicated通知)
+		OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+		OwnedCharacter->bUseControllerRotationYaw = true;
+
+		if (EquippedWeapon->EquipSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, OwnedCharacter->GetActorLocation());
+		}
+	}
 }
 
 void UCombatComponent::Reload()
@@ -111,13 +144,33 @@ void UCombatComponent::Reload()
 	}
 }
 
-//Client 调用 会在Server执行
-//Server 调用 会在Server执行
+//Client 调用 会在Server执行, Server 调用 会在Server执行
 void UCombatComponent::ServerReload_Implementation()
 {
-	if (OwnedCharacter == nullptr) return;
 	CombatState = ECombatState::ECS_Reloading;
 	HandleReload();
+}
+
+void UCombatComponent::HandleReload()
+{
+	//Character播放Reload动画
+	OwnedCharacter->PlayReloadMontage();
+}
+
+int32 UCombatComponent::AmountToReload()
+{
+	if (EquippedWeapon == nullptr) return 0;
+
+	int32 RoomInMag = EquippedWeapon->GetReloadNeedAmmo();						//弹夹内需要的数量
+	
+	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
+	{
+		int32 AmmoCarried = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];	//携带的弹药数量
+		int32 Least = FMath::Min(RoomInMag, AmmoCarried);						//实际可换的数量
+		return FMath::Clamp(RoomInMag, 0, Least);
+	}
+
+	return 0;
 }
 
 void UCombatComponent::OnRep_CombatState()
@@ -137,20 +190,13 @@ void UCombatComponent::OnRep_CombatState()
 	}
 }
 
-void UCombatComponent::HandleReload()
-{
-	//Character播放Reload动画
-	OwnedCharacter->PlayReloadMontage();
-
-	//Weapon 换弹
-}
-
 void UCombatComponent::FinishedReloading()
 {
 	if (OwnedCharacter == nullptr) return;
 	if (OwnedCharacter->HasAuthority())
 	{
 		CombatState = ECombatState::ECS_Unoccupied;
+		UpdateAmmoValues();
 	}
 	//换弹完成, 继续开火, CombatState是复制的, 所以还需要再OnRep处理客户端被复制的人逻辑
 	if (bFireButtonPressed)
@@ -159,26 +205,30 @@ void UCombatComponent::FinishedReloading()
 	}
 }
 
-void UCombatComponent::onRep_EquippedWeapon()
+void UCombatComponent::UpdateAmmoValues()
 {
-	
-	if (OwnedCharacter && EquippedWeapon)
-	{
-		//为什么还要在客户端执行将Weapon附加到Socket?
-		//因为武器掉落会启用模拟物理, 而模拟物理会和AttachActor冲突
-		//我们无法保证掉落后立即拾取到低是模拟物理先执行到客户端, 还是AttachActor先执行到客户端(取决于网络)
-		//以防万一, 希望一定能AttachActor, 所以客户端在EquippedWeapon复制后再次执行AttachActor
-		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-		const USkeletalMeshSocket* HandSocket = OwnedCharacter->GetMesh()->GetSocketByName(FName("RightHandSocket"));
-		if (HandSocket)
-		{
-			HandSocket->AttachActor(EquippedWeapon, OwnedCharacter->GetMesh());
-		}
+	if (OwnedCharacter == nullptr && EquippedWeapon == nullptr) return;
 
-		//持有武器时不希望朝向运动方向(此处是来自服务器的Replicated通知)
-		OwnedCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
-		OwnedCharacter->bUseControllerRotationYaw = true;
+	//实际可换弹的数量
+	int32 ReloadAmount = AmountToReload();
+	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
+	{
+		CarriedAmmoMap[EquippedWeapon->GetWeaponType()] -= ReloadAmount;
+		//用于复制, 表示当前武器的携带弹药数量
+		CarriedAmmo = CarriedAmmoMap[EquippedWeapon->GetWeaponType()];
 	}
+	Controller = Controller == nullptr ? Cast<AMultiShootPlayerController>(OwnedCharacter->Controller) : Controller;
+	if (Controller)
+	{
+		Controller->SetHUDCarriedAmmoAmount(CarriedAmmo);
+	}
+
+	if (EquippedWeapon->EquipSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, EquippedWeapon->EquipSound, OwnedCharacter->GetActorLocation());
+	}
+
+	EquippedWeapon->AddAmmo(-ReloadAmount);
 }
 
 void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

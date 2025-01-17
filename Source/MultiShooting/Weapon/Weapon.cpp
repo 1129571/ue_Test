@@ -255,3 +255,9 @@ void AWeapon::Dropped()
 	OwnerController = nullptr;
 }
 
+void AWeapon::AddAmmo(int32 InAmmoToAdd)
+{
+	CurrentAmmoNum = FMath::Clamp(CurrentAmmoNum - InAmmoToAdd, 0, MagCapacity);
+	SetHUDWeaponAmmo();
+}
+

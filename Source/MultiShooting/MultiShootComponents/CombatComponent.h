@@ -58,8 +58,12 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerReload();
 
-	//处理Client和Server
+	/**
+	 * 换弹相关
+	 */
 	void HandleReload();
+
+	int32 AmountToReload();
 
 private:
 	UPROPERTY()
@@ -138,4 +142,6 @@ private:
 
 	UFUNCTION()
 	void OnRep_CombatState();
+
+	void UpdateAmmoValues();
 };

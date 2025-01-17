@@ -42,6 +42,8 @@ public:
 	//武器掉落
 	void Dropped();
 
+	void AddAmmo(int32 InAmmoToAdd);
+
 	//武器的准星资源
 	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
 	class UTexture2D* CrosshairCenter;
@@ -53,6 +55,10 @@ public:
 	UTexture2D* CrosshairTop;
 	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
 	UTexture2D* CrosshairBottom;
+
+	/* 音效资源 */
+	UPROPERTY(EditAnywhere, Category = "Weapon|SoundCue")
+	class USoundCue* EquipSound;
 
 	/*
 	* 自动开火武器相关
@@ -146,5 +152,8 @@ public:
 	FORCEINLINE float GetWeaponZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetWeaponZoomInterpSpeed() const { return ZoomInterpSpeed; }
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
+	FORCEINLINE int32 GetCurrentAmmo() const { return CurrentAmmoNum; }
+	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
+	FORCEINLINE int32 GetReloadNeedAmmo() const { return MagCapacity - CurrentAmmoNum; }
 	bool IsEmpty();
 };
