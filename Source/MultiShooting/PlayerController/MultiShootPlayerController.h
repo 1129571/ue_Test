@@ -60,6 +60,8 @@ protected:
 	void CheckTimeSync(float DeltaTime);
 
 	void PollInit();
+
+	void HandleMatchHasStarted();			//处理InProgress状态的事情
 private:
 
 	UPROPERTY()
@@ -79,6 +81,9 @@ private:
 
 	UPROPERTY()
 	class	UCharacterOverlay* CharacterOverlay;
+
+	UPROPERTY()
+	class UAnnouncement* Announcement;
 
 	// 如果SetHUD时CharacterOverlay不存在, 就把它相关参数保留
 	bool bInitializedCharacterOverlay = false;

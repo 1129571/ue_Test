@@ -40,11 +40,15 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="HUD|Player Stats")
 	TSubclassOf<class UUserWidget> CharacterOverlayClass;
-
 	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;
-
 	void AddCharacterOverlay();
+
+	UPROPERTY(EditAnywhere, Category = "HUD|WarmupTime")
+	TSubclassOf<class UUserWidget> AnnouncementClass;
+	UPROPERTY()
+	class UAnnouncement* Announcement;
+	void AddAnnouncement();
 
 private:
 	virtual void BeginPlay() override;

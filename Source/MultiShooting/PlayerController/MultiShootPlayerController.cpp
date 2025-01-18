@@ -4,6 +4,7 @@
 #include "MultiShootPlayerController.h"
 #include "HUD/MultiShootHUD.h"
 #include "HUD/CharacterOverlay.h"
+#include "HUD/Announcement.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Characters/MultiShootCharacter.h"
@@ -25,7 +26,12 @@ void AMultiShootPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//添加准备状态的Widget
 	MultiHUD = Cast<AMultiShootHUD>(GetHUD());
+	if (MultiHUD)
+	{
+		MultiHUD->AddAnnouncement();
+	}
 }
 
 void AMultiShootPlayerController::Tick(float DeltaTime)
@@ -257,9 +263,18 @@ void AMultiShootPlayerController::OnGameMatchStateSet(FName InMatchState)
 	if (MultiHUD == nullptr) return;
 
 	// 只有在InProgress状态才会生成Widget并添加Viewport
-	if(GameMatchState == MatchState::InProgress)
-	{	
-		MultiHUD->AddCharacterOverlay();
+	if (GameMatchState == MatchState::InProgress)
+	{
+		HandleMatchHasStarted();
+	}
+}
+
+void AMultiShootPlayerController::HandleMatchHasStarted()
+{
+	MultiHUD->AddCharacterOverlay();
+	if (MultiHUD->Announcement)
+	{
+		MultiHUD->Announcement->SetVisibility(ESlateVisibility::Hidden);
 	}
 }
 
@@ -271,6 +286,6 @@ void AMultiShootPlayerController::OnRep_GameMatchSate()
 
 	if (GameMatchState == MatchState::InProgress)
 	{
-		MultiHUD->AddCharacterOverlay();
+		HandleMatchHasStarted();
 	}
 }
