@@ -41,6 +41,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void OnMatchStateSet() override;
+
 private:
 	float CountdownTime = 0.f;		//Tick 记录当前的热身时间
 };

@@ -40,6 +40,21 @@ void AMultiShootGameMode::Tick(float DeltaSeconds)
 
 }
 
+void AMultiShootGameMode::OnMatchStateSet()
+{
+
+	//告诉所有PlayerController当前MatchState
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		AMultiShootPlayerController* MultiShootController = Cast<AMultiShootPlayerController>(*It);
+		if (MultiShootController)
+		{
+			MultiShootController->OnGameMatchStateSet(MatchState);
+		}
+	}
+	Super::OnMatchStateSet();
+}
+
 void AMultiShootGameMode::PlayerEliminated(class AMultiShootCharacter* ElimmedCharacter, class AMultiShootPlayerController* VictimController, AMultiShootPlayerController* AttacherController)
 {
 	//当有玩家死亡时, 其伤害来源的玩家获得加分(自杀除外)
@@ -79,4 +94,5 @@ void AMultiShootGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AControll
 		RestartPlayerAtPlayerStart(ElimmedController, OutPlayerStarts[Selection]);
 	}
 }
+
 

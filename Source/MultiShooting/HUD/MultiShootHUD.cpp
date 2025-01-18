@@ -8,8 +8,6 @@
 void AMultiShootHUD::BeginPlay()
 {
 	Super::BeginPlay();
-
-	AddCharacterOverlay();
 }
 
 void AMultiShootHUD::AddCharacterOverlay()

@@ -16,6 +16,7 @@ class MULTISHOOTING_API AMultiShootPlayerController : public APlayerController
 	
 public:
 	virtual void Tick(float DeltaTime) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void SetHUDHealth(float InCurrentHealth, float InMaxHealth);
 	void SetHUDScore(float InScore);			//这里使用float是因为Score是PlayerState提供的
@@ -28,6 +29,8 @@ public:
 
 	virtual float GetServerTime();					//获取和Server同步后的时间
 	virtual void ReceivedPlayer() override;			//希望尽可能早地将时间同步
+
+	virtual void OnGameMatchStateSet(FName InMatchState);
 
 protected:
 	virtual void BeginPlay() override;
@@ -53,7 +56,10 @@ protected:
 	float TimeSyncFrequency = 5.f;
 
 	float TimeSyncRunningTime = 0.f;				//距离上次同步的时间
+
 	void CheckTimeSync(float DeltaTime);
+
+	void PollInit();
 private:
 
 	UPROPERTY()
@@ -63,4 +69,21 @@ private:
 	float MatchTime = 120.f;
 	//游戏剩余时间
 	uint32 CountdowmInt = 0;
+
+	//来自GameMode的MatchState, 用于在bDelayedStart = true 时响应一些行为, 如HUD的隐藏和显示等
+	UPROPERTY(ReplicatedUsing = OnRep_GameMatchSate)
+	FName GameMatchState;
+
+	UFUNCTION()
+	void OnRep_GameMatchSate();
+
+	UPROPERTY()
+	class	UCharacterOverlay* CharacterOverlay;
+
+	// 如果SetHUD时CharacterOverlay不存在, 就把它相关参数保留
+	bool bInitializedCharacterOverlay = false;
+	float HUDHealth;
+	float HUDMaxHealth;
+	float HUDScore;
+	int32 HUDDefeats;
 };

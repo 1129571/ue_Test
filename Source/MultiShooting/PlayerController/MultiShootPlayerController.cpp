@@ -7,6 +7,8 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Characters/MultiShootCharacter.h"
+#include "Net/UnrealNetwork.h"
+#include "GameMode/MultiShootGameMode.h"
 
 //处理客户端与服务器之间的连接以及玩家身份的初始化。
 //我们希望尽早获取到CS时间差量
@@ -32,6 +34,20 @@ void AMultiShootPlayerController::Tick(float DeltaTime)
 
 	SetHUDTime();
 	CheckTimeSync(DeltaTime);
+
+	// 手动进入InProgress状态才会生成CharacterOverlay, 同时我们在OnPossess时尝试初始化HealthHUD, 
+	// 但是无法确定谁先谁后, 有时候会失败
+	if (bInitializedCharacterOverlay)
+	{
+		PollInit();
+	}
+}
+
+void AMultiShootPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AMultiShootPlayerController, GameMatchState);
 }
 
 void AMultiShootPlayerController::CheckTimeSync(float DeltaTime)
@@ -42,6 +58,24 @@ void AMultiShootPlayerController::CheckTimeSync(float DeltaTime)
 	{
 		ServerRequestServerTime(GetWorld()->GetTimeSeconds()); 
 		TimeSyncRunningTime = 0.f;
+	}
+}
+
+void AMultiShootPlayerController::PollInit()
+{
+	if (CharacterOverlay == nullptr)
+	{
+		if (MultiHUD && MultiHUD->CharacterOverlay)
+		{
+			CharacterOverlay = MultiHUD->CharacterOverlay;
+			if (CharacterOverlay)
+			{
+				SetHUDHealth(HUDHealth,HUDMaxHealth);
+				// Score和Defeats考虑是否有必要
+				SetHUDScore(HUDScore);
+				SetHUDDefeats(HUDDefeats);
+			}
+		}
 	}
 }
 
@@ -62,6 +96,12 @@ void AMultiShootPlayerController::SetHUDHealth(float InCurrentHealth, float InMa
 		FString HealthString = FString::Printf(TEXT("%d/%d"), FMath::CeilToInt(InCurrentHealth), FMath::CeilToInt(InMaxHealth));
 		MultiHUD->CharacterOverlay->HealthText->SetText(FText::FromString(HealthString));
 	}
+	else
+	{
+		bInitializedCharacterOverlay = true;
+		HUDHealth = InCurrentHealth;
+		HUDMaxHealth = InMaxHealth;
+	}
 }
 
 void AMultiShootPlayerController::SetHUDScore(float InScore)
@@ -78,6 +118,11 @@ void AMultiShootPlayerController::SetHUDScore(float InScore)
 		FString ScoreString = FString::Printf(TEXT("%d"), FMath::FloorToInt(InScore));
 		MultiHUD->CharacterOverlay->ScoreAmount->SetText(FText::FromString(ScoreString));
 	}
+	else
+	{
+		bInitializedCharacterOverlay = true;
+		HUDScore = InScore;
+	}
 }
 
 void AMultiShootPlayerController::SetHUDDefeats(int32 InDefeatsAmount)
@@ -93,6 +138,11 @@ void AMultiShootPlayerController::SetHUDDefeats(int32 InDefeatsAmount)
 	{
 		FString DefeatsString = FString::Printf(TEXT("%d"), InDefeatsAmount);
 		MultiHUD->CharacterOverlay->DefeatsAmount->SetText(FText::FromString(DefeatsString));
+	}
+	else
+	{
+		bInitializedCharacterOverlay = true;
+		HUDDefeats = InDefeatsAmount;
 	}
 }
 
@@ -171,7 +221,7 @@ void AMultiShootPlayerController::SetHUDTime()
 	{
 		SetHUDMatchCountdown(MatchTime - GetServerTime());
 	}
-		
+
 	CountdowmInt = SecondsLeft;
 }
 
@@ -198,3 +248,29 @@ float AMultiShootPlayerController::GetServerTime()
 	else return GetWorld()->GetTimeSeconds() + ClientServerDelta;
 }
 
+void AMultiShootPlayerController::OnGameMatchStateSet(FName InMatchState)
+{
+	GameMatchState = InMatchState;
+
+	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
+
+	if (MultiHUD == nullptr) return;
+
+	// 只有在InProgress状态才会生成Widget并添加Viewport
+	if(GameMatchState == MatchState::InProgress)
+	{	
+		MultiHUD->AddCharacterOverlay();
+	}
+}
+
+void AMultiShootPlayerController::OnRep_GameMatchSate()
+{
+	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
+
+	if (MultiHUD == nullptr) return;
+
+	if (GameMatchState == MatchState::InProgress)
+	{
+		MultiHUD->AddCharacterOverlay();
+	}
+}
