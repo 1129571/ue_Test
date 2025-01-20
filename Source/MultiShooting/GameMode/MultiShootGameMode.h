@@ -6,6 +6,12 @@
 #include "GameFramework/GameMode.h"
 #include "MultiShootGameMode.generated.h"
 
+namespace MatchState
+{
+	// extern 表示定义在其他文件, 模块名_API是导出导入宏, 可以跨模块使用
+	extern MULTISHOOTING_API const FName Cooldown;			//比赛结束, 显示获胜者并开始冷却倒计时
+}
+
 /**
  * 
  */
@@ -26,6 +32,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly)
 	float MatchTime = 180.f;			//比赛时间
+
+	UPROPERTY(EditDefaultsOnly)
+	float CooldownTime = 10.f;			//比赛结束后的冷却时间
 
 	/**
 	 * 玩家淘汰时将其从游戏移除

@@ -278,30 +278,6 @@ void AMultiShootPlayerController::OnPossess(APawn* aPawn)
 	}
 }
 
-void AMultiShootPlayerController::OnGameMatchStateSet(FName InMatchState)
-{
-	GameMatchState = InMatchState;
-
-	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
-
-	if (MultiHUD == nullptr) return;
-
-	// 只有在InProgress状态才会生成Widget并添加Viewport
-	if (GameMatchState == MatchState::InProgress)
-	{
-		HandleMatchHasStarted();
-	}
-}
-
-void AMultiShootPlayerController::HandleMatchHasStarted()
-{
-	MultiHUD->AddCharacterOverlay();
-	if (MultiHUD->Announcement)
-	{
-		MultiHUD->Announcement->SetVisibility(ESlateVisibility::Hidden);
-	}
-}
-
 //Server上的PlayerController从GameMode获取一些信息, 传递给Client的PlayerController
 void AMultiShootPlayerController::ServerCheckMatchState_Implementation()
 {
@@ -313,12 +289,6 @@ void AMultiShootPlayerController::ServerCheckMatchState_Implementation()
 		MatchTime = GameMode->MatchTime;
 		LevelStartingTime = GameMode->LevelStaringTime;
 		ClientJoinMidgame(GameMatchState, LevelStartingTime, MatchTime, WarmupTime);
-
-		//热身阶段Widget
-// 		if (MultiHUD)
-// 		{
-// 			MultiHUD->AddAnnouncement();
-// 		}
 	}
 }
 
@@ -337,14 +307,63 @@ void AMultiShootPlayerController::ClientJoinMidgame_Implementation(FName InMatch
 	}
 }
 
-void AMultiShootPlayerController::OnRep_GameMatchSate()
+void AMultiShootPlayerController::OnGameMatchStateSet(FName InMatchState)
 {
+	GameMatchState = InMatchState;
+
 	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
 
 	if (MultiHUD == nullptr) return;
 
+	// 只有在InProgress状态才会生成Widget并添加Viewport
 	if (GameMatchState == MatchState::InProgress)
 	{
 		HandleMatchHasStarted();
 	}
+	else if (GameMatchState == MatchState::Cooldown)
+	{
+		HandleMatchHasCooldown();
+	}
 }
+
+void AMultiShootPlayerController::OnRep_GameMatchSate()
+{
+	if (GameMatchState == MatchState::InProgress)
+	{
+		HandleMatchHasStarted();
+	}
+	else if (GameMatchState == MatchState::Cooldown)
+	{
+		HandleMatchHasCooldown();
+	}
+}
+void AMultiShootPlayerController::HandleMatchHasStarted()
+{
+	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
+
+	if (MultiHUD)
+	{
+		MultiHUD->AddCharacterOverlay();
+		if (MultiHUD->Announcement)
+		{
+			MultiHUD->Announcement->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+}
+
+void AMultiShootPlayerController::HandleMatchHasCooldown()
+{
+	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
+	if (MultiHUD)
+	{
+		if (MultiHUD->CharacterOverlay)
+		{
+			MultiHUD->CharacterOverlay->RemoveFromParent();
+		}
+		if (MultiHUD->Announcement)
+		{
+			MultiHUD->Announcement->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
+}
+

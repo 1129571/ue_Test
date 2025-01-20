@@ -63,6 +63,7 @@ protected:
 	void PollInit();
 
 	void HandleMatchHasStarted();			//处理InProgress状态的事情
+	void HandleMatchHasCooldown();			//处理Cooldown状态的事情
 
 	UFUNCTION(Server, Reliable)
 	void ServerCheckMatchState();

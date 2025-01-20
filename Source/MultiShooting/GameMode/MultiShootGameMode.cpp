@@ -8,6 +8,11 @@
 #include "GameFramework/PlayerStart.h"
 #include "PlayerState/MultiShootPlayerState.h"
 
+namespace MatchState
+{
+	const FName Cooldown = FName(TEXT("Cooldown"));
+}
+
 AMultiShootGameMode::AMultiShootGameMode()
 {
 	//Match State 会停留在WaitingToStart, 直到我们手动调用StartMatch()
@@ -29,20 +34,28 @@ void AMultiShootGameMode::Tick(float DeltaSeconds)
 
 	if (MatchState == MatchState::WaitingToStart)
 	{
-		//希望从BeginPlay开始热身倒计时
+		//希望从BeginPlay(关卡加载完成后)开始热身倒计时
 		CountdownTime = WarmupTime - GetWorld()->GetTimeSeconds() + LevelStaringTime;
 		if (CountdownTime <= 0)
 		{
-			//进入游戏, InProgress状态
+			//进入InProgress状态
 			StartMatch();
 		}
 	}
-
+	else if (MatchState == MatchState::InProgress)
+	{
+		CountdownTime = WarmupTime + MatchTime - GetWorld()->GetTimeSeconds() + LevelStaringTime;
+		if (CountdownTime <= 0)
+		{
+			//进入Cooldown状态
+			SetMatchState(MatchState::Cooldown);
+		}
+	}
 }
 
 void AMultiShootGameMode::OnMatchStateSet()
 {
-
+	Super::OnMatchStateSet();
 	//告诉所有PlayerController当前MatchState
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
@@ -52,7 +65,6 @@ void AMultiShootGameMode::OnMatchStateSet()
 			MultiShootController->OnGameMatchStateSet(MatchState);
 		}
 	}
-	Super::OnMatchStateSet();
 }
 
 void AMultiShootGameMode::PlayerEliminated(class AMultiShootCharacter* ElimmedCharacter, class AMultiShootPlayerController* VictimController, AMultiShootPlayerController* AttacherController)
