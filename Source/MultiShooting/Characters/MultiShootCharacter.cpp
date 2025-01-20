@@ -88,6 +88,7 @@ void AMultiShootCharacter::BeginPlay()
 
 void AMultiShootCharacter::MoveForward(float AxisValue)
 {
+	if (bDisableGameplay) return;
 	if (Controller != nullptr && AxisValue != 0.f)
 	{
 		//在这里我们希望以控制器的前为Character的前方
@@ -101,6 +102,7 @@ void AMultiShootCharacter::MoveForward(float AxisValue)
 
 void AMultiShootCharacter::MoveRight(float AxisValue)
 {
+	if (bDisableGameplay) return;
 	if (Controller != nullptr && AxisValue != 0.f)
 	{
 		const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
@@ -121,6 +123,7 @@ void AMultiShootCharacter::LookUp(float AxisValue)
 
 void AMultiShootCharacter::EquipWeaponPressed()
 {
+	if (bDisableGameplay) return;
 	// Combat 是我们自定义的组件, 武器战斗相关操作由其完成
 	if (Combat)
 	{
@@ -138,6 +141,7 @@ void AMultiShootCharacter::EquipWeaponPressed()
 
 void AMultiShootCharacter::CrouchPressed()
 {
+	if (bDisableGameplay) return;
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -150,6 +154,7 @@ void AMultiShootCharacter::CrouchPressed()
 
 void AMultiShootCharacter::ReloadPressed()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{
 		Combat->Reload();
@@ -158,6 +163,7 @@ void AMultiShootCharacter::ReloadPressed()
 
 void AMultiShootCharacter::AimPressed()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{
 		Combat->SetAiming(true);
@@ -166,6 +172,7 @@ void AMultiShootCharacter::AimPressed()
 
 void AMultiShootCharacter::AimReleased()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{	
 		Combat->SetAiming(false);
@@ -174,6 +181,7 @@ void AMultiShootCharacter::AimReleased()
 
 void AMultiShootCharacter::FirePressed()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{
 		Combat->WeaponFire(true);
@@ -182,6 +190,7 @@ void AMultiShootCharacter::FirePressed()
 
 void AMultiShootCharacter::FireReleased()
 {
+	if (bDisableGameplay) return;
 	if (Combat)
 	{
 		Combat->WeaponFire(false);
@@ -277,6 +286,7 @@ void AMultiShootCharacter::SimProxiesTurn()
 
 void AMultiShootCharacter::Jump()
 {
+	if (bDisableGameplay) return;
 	//覆写jump方法, 我们希望在蹲下jump时是站起来
 	if (bIsCrouched)
 	{
@@ -348,11 +358,7 @@ void AMultiShootCharacter::MulticastElim_Implementation()
 	//禁用角色移动相关能力
 	GetCharacterMovement()->DisableMovement();					//不能移动, 但是可以旋转角色
 	GetCharacterMovement()->StopMovementImmediately();			//不能再旋转角色
-	if (MultiShootPlayerController)
-	{
-		//禁用输入, 防止死亡后还能开火等操作
-		DisableInput(MultiShootPlayerController);
-	}
+	bDisableGameplay = true;									//禁用大部分输入
 
 	//禁用角色碰撞
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -536,6 +542,24 @@ void AMultiShootCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	RotateInPlace(DeltaTime);
+
+	HideCameraIfCharacterClose();
+	// 初始化HUD分数, 因为PlayerState要比BenginPlay晚
+	PollInit();
+}
+
+void AMultiShootCharacter::RotateInPlace(float DeltaTime)
+{
+	//禁用原地旋转, 动画
+	if (bDisableGameplay)
+	{
+		bUseControllerRotationYaw = false;
+		TurningInPlace = ETurningInPlace::ETIP_NoTurning;
+
+		return;
+	}
+
 	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled())
 	{
 		AimOffset(DeltaTime);
@@ -549,11 +573,6 @@ void AMultiShootCharacter::Tick(float DeltaTime)
 		}
 		CalculateAO_Pitch();
 	}
-
-	HideCameraIfCharacterClose();
-
-	// 初始化HUD分数, 因为PlayerState要比BenginPlay晚
-	PollInit();
 }
 
 void AMultiShootCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -587,7 +606,7 @@ void AMultiShootCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	//增加了把这个变量复制给哪个客户端, 该例只会复制给Pawn的拥有者
 	DOREPLIFETIME_CONDITION(AMultiShootCharacter, OverlappingWeapon, COND_OwnerOnly);
 	DOREPLIFETIME(AMultiShootCharacter, CurrentHealth);
-
+	DOREPLIFETIME(AMultiShootCharacter, bDisableGameplay);
 }
 
 void AMultiShootCharacter::PostInitializeComponents()

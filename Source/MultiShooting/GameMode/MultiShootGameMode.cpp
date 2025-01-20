@@ -36,7 +36,7 @@ void AMultiShootGameMode::Tick(float DeltaSeconds)
 	{
 		//希望从BeginPlay(关卡加载完成后)开始热身倒计时
 		CountdownTime = WarmupTime - GetWorld()->GetTimeSeconds() + LevelStaringTime;
-		if (CountdownTime <= 0)
+		if (CountdownTime <= 0.f)
 		{
 			//进入InProgress状态
 			StartMatch();
@@ -45,10 +45,19 @@ void AMultiShootGameMode::Tick(float DeltaSeconds)
 	else if (MatchState == MatchState::InProgress)
 	{
 		CountdownTime = WarmupTime + MatchTime - GetWorld()->GetTimeSeconds() + LevelStaringTime;
-		if (CountdownTime <= 0)
+		if (CountdownTime <= 0.f)
 		{
 			//进入Cooldown状态
 			SetMatchState(MatchState::Cooldown);
+		}
+	}
+	else if (MatchState == MatchState::Cooldown)
+	{
+		CountdownTime = WarmupTime + MatchTime + CooldownTime - GetWorld()->GetTimeSeconds() + LevelStaringTime;
+		if (CountdownTime <= 0.f)
+		{
+			//GameMode提供的函数
+			RestartGame();
 		}
 	}
 }

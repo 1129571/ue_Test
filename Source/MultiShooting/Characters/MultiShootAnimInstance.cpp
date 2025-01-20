@@ -97,8 +97,8 @@ void UMultiShootAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 	// Reload 时就不应该继续使用IK
 	bUseFABRIK = MultiShootCharacter->GetCombatState() != ECombatState::ECS_Reloading;
-	// Reload时不要使用AimOffset
-	bUseAimOffset = MultiShootCharacter->GetCombatState() != ECombatState::ECS_Reloading;
-	// Reload时不要使用RightHand旋转骨骼
-	bFixRightHand = MultiShootCharacter->GetCombatState() != ECombatState::ECS_Reloading;
+	// Reload && Cooldown状态 时不要使用AimOffset
+	bUseAimOffset = MultiShootCharacter->GetCombatState() != ECombatState::ECS_Reloading && !MultiShootCharacter->GetDisableGameplay();
+	// Reload && Cooldown状态 时不要使用RightHand旋转骨骼
+	bFixRightHand = MultiShootCharacter->GetCombatState() != ECombatState::ECS_Reloading && !MultiShootCharacter->GetDisableGameplay();
 }

@@ -11,6 +11,7 @@
 #include "Net/UnrealNetwork.h"
 #include "GameMode/MultiShootGameMode.h"
 #include "Kismet/GameplayStatics.h"
+#include "MultiShootComponents/CombatComponent.h"
 
 //处理客户端与服务器之间的连接以及玩家身份的初始化。
 //我们希望尽早获取到CS时间差量
@@ -393,6 +394,18 @@ void AMultiShootPlayerController::HandleMatchHasCooldown()
 			FString AnnouncementStr(TEXT("比赛结束, 新比赛即将开始:"));
 			MultiHUD->Announcement->AnnouncementText->SetText(FText::FromString(AnnouncementStr));
 			MultiHUD->Announcement->InfoText->SetText(FText());
+		}
+	}
+
+	AMultiShootCharacter* MultiShootCharacter = Cast<AMultiShootCharacter>(GetPawn());
+	if (MultiShootCharacter)
+	{
+		//该状态禁用部分输入
+		MultiShootCharacter->bDisableGameplay = true;
+		//如果正在自动开火也应该停止
+		if (MultiShootCharacter->GetCombatComponent())
+		{
+			MultiShootCharacter->GetCombatComponent()->WeaponFire(false);
 		}
 	}
 }

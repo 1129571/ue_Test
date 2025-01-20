@@ -34,6 +34,9 @@ public:
 	void MulticastElim();
 	virtual void Destroyed() override;
 
+	UPROPERTY(Replicated)
+	bool bDisableGameplay = false;				//禁用大部分输入(如Cooldown 状态下只能旋转鼠标)
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -65,6 +68,8 @@ protected:
 		AActor* DamageCauser
 	);
 	void UpdateHUDHealth();
+
+	void RotateInPlace(float DeltaTime);
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Character|Camera")
@@ -206,6 +211,8 @@ public:
 	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 	FORCEINLINE float GetCurrentHealth() const { return CurrentHealth; }
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
+	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combat; }
 	FVector GetHitTarget() const;
 	ECombatState GetCombatState() const;
 };
