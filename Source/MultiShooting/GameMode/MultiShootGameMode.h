@@ -21,8 +21,11 @@ public:
 
 	float LevelStaringTime = 0.f;		//地图打开的时间, 热身时间要从地图打开开始
 
-	UPROPERTY(EditAnywhere)
-	float WarmupTime = 10.f;			//热身时间
+	UPROPERTY(EditDefaultsOnly)
+	float WarmupTime = 15.f;			//热身时间
+
+	UPROPERTY(EditDefaultsOnly)
+	float MatchTime = 180.f;			//比赛时间
 
 	/**
 	 * 玩家淘汰时将其从游戏移除

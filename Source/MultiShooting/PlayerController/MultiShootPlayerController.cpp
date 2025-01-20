@@ -10,12 +10,14 @@
 #include "Characters/MultiShootCharacter.h"
 #include "Net/UnrealNetwork.h"
 #include "GameMode/MultiShootGameMode.h"
+#include "Kismet/GameplayStatics.h"
 
 //处理客户端与服务器之间的连接以及玩家身份的初始化。
 //我们希望尽早获取到CS时间差量
 void AMultiShootPlayerController::ReceivedPlayer()
 {
 	Super::ReceivedPlayer();
+
 	if (IsLocalController())
 	{
 		ServerRequestServerTime(GetWorld()->GetTimeSeconds());
@@ -28,10 +30,7 @@ void AMultiShootPlayerController::BeginPlay()
 
 	//添加准备状态的Widget
 	MultiHUD = Cast<AMultiShootHUD>(GetHUD());
-	if (MultiHUD)
-	{
-		MultiHUD->AddAnnouncement();
-	}
+	ServerCheckMatchState();
 }
 
 void AMultiShootPlayerController::Tick(float DeltaTime)
@@ -65,6 +64,29 @@ void AMultiShootPlayerController::CheckTimeSync(float DeltaTime)
 		ServerRequestServerTime(GetWorld()->GetTimeSeconds()); 
 		TimeSyncRunningTime = 0.f;
 	}
+}
+
+void AMultiShootPlayerController::ServerRequestServerTime_Implementation(float TimeOfClientRequest)
+{
+	float ServerTimeOfReceipt = GetWorld()->GetTimeSeconds();
+	ClientReportServerTime(TimeOfClientRequest, ServerTimeOfReceipt);
+}
+
+void AMultiShootPlayerController::ClientReportServerTime_Implementation(float TimeOfClientRequest, float TimeServerReceivedClientRequest)
+{
+	// 客户端发起ServerRPC 到 服务器调用ClientRPC 所花的时间
+	float RoundTripTime = GetWorld()->GetTimeSeconds() - TimeOfClientRequest;
+	// 服务器当前时间(ClientRPC接收的瞬间), 这里认为ServerRPC和ClientRPC所花的时间是一致的
+	float CurrentServerTime = TimeServerReceivedClientRequest + (0.5f * RoundTripTime);
+	// 客户端和服务器的时间差量
+	ClientServerDelta = CurrentServerTime - GetWorld()->GetTimeSeconds();
+}
+
+//通过客户端当前时间 + CS时间差量可以获取到服务器时间
+float AMultiShootPlayerController::GetServerTime()
+{
+	if (HasAuthority()) return GetWorld()->GetTimeSeconds();
+	else return GetWorld()->GetTimeSeconds() + ClientServerDelta;
 }
 
 void AMultiShootPlayerController::PollInit()
@@ -184,6 +206,25 @@ void AMultiShootPlayerController::SetHUDCarriedAmmoAmount(int32 InCarriedAmmoAmo
 	}
 }
 
+void AMultiShootPlayerController::SetHUDTime()
+{
+	float TimeLeft = 0.f;
+	if (GameMatchState == MatchState::WaitingToStart) TimeLeft = WarmupTime + LevelStartingTime - GetServerTime();
+	if (GameMatchState == MatchState::InProgress) TimeLeft = MatchTime + LevelStartingTime + WarmupTime - GetServerTime();
+	uint32 SecondsLeft = FMath::CeilToInt(TimeLeft);
+
+	// 只有剩余时间(S)变化时才更新HUD
+	if (SecondsLeft != CountdowmInt)
+	{
+		//更新热身状态的时间
+		if (GameMatchState == MatchState::WaitingToStart) SetHUDAnnouncementCountdown(TimeLeft);
+		//更新比赛状态的倒计时
+		if (GameMatchState == MatchState::InProgress)  SetHUDMatchCountdown(TimeLeft);
+	}
+
+	CountdowmInt = SecondsLeft;
+}
+
 void AMultiShootPlayerController::SetHUDMatchCountdown(float InCountdownTime)
 {
 	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
@@ -203,6 +244,25 @@ void AMultiShootPlayerController::SetHUDMatchCountdown(float InCountdownTime)
 	}
 }
 
+void AMultiShootPlayerController::SetHUDAnnouncementCountdown(float InCountdownTime)
+{
+	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
+
+	bool bHUDValid =
+		MultiHUD &&
+		MultiHUD->Announcement &&
+		MultiHUD->Announcement->AnnouncementText;
+
+	if (bHUDValid)
+	{
+		int32 Minutes = FMath::FloorToInt(InCountdownTime / 60.f);
+		int32 Seconds = InCountdownTime - Minutes * 60.f;
+
+		FString MatchCountdownString = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
+		MultiHUD->Announcement->AnnouncementText->SetText(FText::FromString(MatchCountdownString));
+	}
+}
+
 void AMultiShootPlayerController::OnPossess(APawn* aPawn)
 {
 	Super::OnPossess(aPawn);
@@ -216,42 +276,6 @@ void AMultiShootPlayerController::OnPossess(APawn* aPawn)
 			SetHUDHealth(MultiShootCharacter->GetCurrentHealth(), MultiShootCharacter->GetMaxHealth());
 		}
 	}
-}
-
-void AMultiShootPlayerController::SetHUDTime()
-{
-	uint32 SecondsLeft = FMath::CeilToInt(MatchTime - GetServerTime());
-
-	// 只有剩余时间(S)变化时才更新HUD
-	if (SecondsLeft != CountdowmInt)
-	{
-		SetHUDMatchCountdown(MatchTime - GetServerTime());
-	}
-
-	CountdowmInt = SecondsLeft;
-}
-
-void AMultiShootPlayerController::ServerRequestServerTime_Implementation(float TimeOfClientRequest)
-{
-	float ServerTimeOfReceipt = GetWorld()->GetTimeSeconds();
-	ClientReportServerTime(TimeOfClientRequest, ServerTimeOfReceipt);
-}
-
-void AMultiShootPlayerController::ClientReportServerTime_Implementation(float TimeOfClientRequest, float TimeServerReceivedClientRequest)
-{
-	// 客户端发起ServerRPC 到 服务器调用ClientRPC 所花的时间
-	float RoundTripTime = GetWorld()->GetTimeSeconds() - TimeOfClientRequest;
-	// 服务器当前时间(ClientRPC接收的瞬间), 这里认为ServerRPC和ClientRPC所花的时间是一致的
-	float CurrentServerTime = TimeServerReceivedClientRequest + (0.5f * RoundTripTime);
-	// 客户端和服务器的时间差量
-	ClientServerDelta = CurrentServerTime - GetWorld()->GetTimeSeconds();
-}
-
-//通过客户端当前时间 + CS时间差量可以获取到服务器时间
-float AMultiShootPlayerController::GetServerTime()
-{
-	if (HasAuthority()) return GetWorld()->GetTimeSeconds();
-	else return GetWorld()->GetTimeSeconds() + ClientServerDelta;
 }
 
 void AMultiShootPlayerController::OnGameMatchStateSet(FName InMatchState)
@@ -275,6 +299,41 @@ void AMultiShootPlayerController::HandleMatchHasStarted()
 	if (MultiHUD->Announcement)
 	{
 		MultiHUD->Announcement->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+//Server上的PlayerController从GameMode获取一些信息, 传递给Client的PlayerController
+void AMultiShootPlayerController::ServerCheckMatchState_Implementation()
+{
+	AMultiShootGameMode* GameMode = Cast<AMultiShootGameMode>(UGameplayStatics::GetGameMode(this));
+	if (GameMode)
+	{
+		WarmupTime = GameMode->WarmupTime;
+		GameMatchState = GameMode->GetMatchState();
+		MatchTime = GameMode->MatchTime;
+		LevelStartingTime = GameMode->LevelStaringTime;
+		ClientJoinMidgame(GameMatchState, LevelStartingTime, MatchTime, WarmupTime);
+
+		//热身阶段Widget
+// 		if (MultiHUD)
+// 		{
+// 			MultiHUD->AddAnnouncement();
+// 		}
+	}
+}
+
+void AMultiShootPlayerController::ClientJoinMidgame_Implementation(FName InMatchState, float InLevelStartingTime, float InMatchTime, float InWarmupTime)
+{
+	WarmupTime = InWarmupTime;
+	LevelStartingTime = InLevelStartingTime;
+	MatchTime = InMatchTime;
+	GameMatchState = InMatchState;
+	OnGameMatchStateSet(GameMatchState);
+
+	//热身阶段Widget
+	if (MultiHUD)
+	{
+		MultiHUD->AddAnnouncement();
 	}
 }
 
