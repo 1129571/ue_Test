@@ -23,8 +23,9 @@ public:
 	void SetHUDDefeats(int32 InDefeatsAmount);
 	void SetHUDWeaponAmmoAmount(int32 InWeaponAmmoAmount);			//武器内的弹药
 	void SetHUDCarriedAmmoAmount(int32 InCarriedAmmoAmount);		//玩家携带的弹药
+
 	void SetHUDMatchCountdown(float InCountdownTime);				//游戏倒计时(秒)
-	void SetHUDAnnouncementCountdown(float InCountdownTime);		//热身倒计时(秒)
+	void SetHUDAnnouncementCountdown(float InCountdownTime);		//公告Widget: 热身倒计时 && 新游戏冷却倒计时
 
 	virtual void OnPossess(APawn* aPawn) override;
 
@@ -69,7 +70,7 @@ protected:
 	void ServerCheckMatchState();
 
 	UFUNCTION(Client, Reliable)
-	void ClientJoinMidgame(FName InMatchState, float InLevelStartingTime, float InMatchTime, float InWarmupTime);
+	void ClientJoinMidgame(FName InMatchState, float InLevelStartingTime, float InMatchTime, float InWarmupTime, float InCooldownTime);
 private:
 
 	UPROPERTY()
@@ -78,6 +79,7 @@ private:
 	float LevelStartingTime = 0.f;		//游戏开始时间
 	float MatchTime = 0.f;		//游戏时长
 	float WarmupTime = 0.f;		//热身时长
+	float CooldownTime = 0.f;	//比赛结束的冷却时长
 	uint32 CountdowmInt = 0;	//游戏剩余时间
 
 	//来自GameMode的MatchState, 用于在bDelayedStart = true 时响应一些行为, 如HUD的隐藏和显示等

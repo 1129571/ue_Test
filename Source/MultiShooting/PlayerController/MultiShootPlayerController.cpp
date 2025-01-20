@@ -206,20 +206,25 @@ void AMultiShootPlayerController::SetHUDCarriedAmmoAmount(int32 InCarriedAmmoAmo
 	}
 }
 
+// 仅处理倒计时相关, 不处理其他Widget控件(倒计时需要在Tick调用, 避免资源浪费)
 void AMultiShootPlayerController::SetHUDTime()
 {
 	float TimeLeft = 0.f;
 	if (GameMatchState == MatchState::WaitingToStart) TimeLeft = WarmupTime + LevelStartingTime - GetServerTime();
-	if (GameMatchState == MatchState::InProgress) TimeLeft = MatchTime + LevelStartingTime + WarmupTime - GetServerTime();
+	else if (GameMatchState == MatchState::InProgress) TimeLeft = MatchTime + LevelStartingTime + WarmupTime - GetServerTime();
+	else if (GameMatchState == MatchState::Cooldown) TimeLeft = MatchTime + LevelStartingTime + WarmupTime + CooldownTime - GetServerTime();
 	uint32 SecondsLeft = FMath::CeilToInt(TimeLeft);
 
 	// 只有剩余时间(S)变化时才更新HUD
 	if (SecondsLeft != CountdowmInt)
 	{
-		//更新热身状态的时间
-		if (GameMatchState == MatchState::WaitingToStart) SetHUDAnnouncementCountdown(TimeLeft);
+		//更新热身状态的时间 && 更新比赛结束冷却的倒计时
+		if (GameMatchState == MatchState::WaitingToStart || GameMatchState == MatchState::Cooldown) 
+			SetHUDAnnouncementCountdown(TimeLeft);
 		//更新比赛状态的倒计时
-		if (GameMatchState == MatchState::InProgress)  SetHUDMatchCountdown(TimeLeft);
+		else if (GameMatchState == MatchState::InProgress)  
+			SetHUDMatchCountdown(TimeLeft);
+	
 	}
 
 	CountdowmInt = SecondsLeft;
@@ -236,6 +241,13 @@ void AMultiShootPlayerController::SetHUDMatchCountdown(float InCountdownTime)
 
 	if (bHUDValid)
 	{
+
+		if (InCountdownTime < 0.f)
+		{
+			MultiHUD->CharacterOverlay->GameTimeText->SetText(FText());
+			return;
+		}
+
 		int32 Minutes = FMath::FloorToInt(InCountdownTime / 60.f);
 		int32 Seconds = InCountdownTime - Minutes * 60.f;
 
@@ -251,15 +263,21 @@ void AMultiShootPlayerController::SetHUDAnnouncementCountdown(float InCountdownT
 	bool bHUDValid =
 		MultiHUD &&
 		MultiHUD->Announcement &&
-		MultiHUD->Announcement->AnnouncementText;
+		MultiHUD->Announcement->WarmupTimeText;
 
 	if (bHUDValid)
 	{
+		if (InCountdownTime < 0.f)
+		{
+			MultiHUD->Announcement->WarmupTimeText->SetText(FText());
+			return;
+		}
+
 		int32 Minutes = FMath::FloorToInt(InCountdownTime / 60.f);
 		int32 Seconds = InCountdownTime - Minutes * 60.f;
 
 		FString MatchCountdownString = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
-		MultiHUD->Announcement->AnnouncementText->SetText(FText::FromString(MatchCountdownString));
+		MultiHUD->Announcement->WarmupTimeText->SetText(FText::FromString(MatchCountdownString));
 	}
 }
 
@@ -288,16 +306,18 @@ void AMultiShootPlayerController::ServerCheckMatchState_Implementation()
 		GameMatchState = GameMode->GetMatchState();
 		MatchTime = GameMode->MatchTime;
 		LevelStartingTime = GameMode->LevelStaringTime;
-		ClientJoinMidgame(GameMatchState, LevelStartingTime, MatchTime, WarmupTime);
+		CooldownTime = GameMode->CooldownTime;
+		ClientJoinMidgame(GameMatchState, LevelStartingTime, MatchTime, WarmupTime, CooldownTime);
 	}
 }
 
-void AMultiShootPlayerController::ClientJoinMidgame_Implementation(FName InMatchState, float InLevelStartingTime, float InMatchTime, float InWarmupTime)
+void AMultiShootPlayerController::ClientJoinMidgame_Implementation(FName InMatchState, float InLevelStartingTime, float InMatchTime, float InWarmupTime, float InCooldownTime)
 {
 	WarmupTime = InWarmupTime;
 	LevelStartingTime = InLevelStartingTime;
 	MatchTime = InMatchTime;
 	GameMatchState = InMatchState;
+	CooldownTime = InCooldownTime;
 	OnGameMatchStateSet(GameMatchState);
 
 	//热身阶段Widget
@@ -351,6 +371,7 @@ void AMultiShootPlayerController::HandleMatchHasStarted()
 	}
 }
 
+//处理Announcement控件的非倒计时部分, 这部分不需要在Tick调用
 void AMultiShootPlayerController::HandleMatchHasCooldown()
 {
 	MultiHUD = MultiHUD == nullptr ? Cast<AMultiShootHUD>(GetHUD()) : MultiHUD;
@@ -360,9 +381,18 @@ void AMultiShootPlayerController::HandleMatchHasCooldown()
 		{
 			MultiHUD->CharacterOverlay->RemoveFromParent();
 		}
-		if (MultiHUD->Announcement)
+
+		bool bAnnouncementValid =
+			MultiHUD->Announcement &&
+			MultiHUD->Announcement->AnnouncementText &&
+			MultiHUD->Announcement->InfoText;
+
+		if (bAnnouncementValid)
 		{
 			MultiHUD->Announcement->SetVisibility(ESlateVisibility::Visible);
+			FString AnnouncementStr(TEXT("比赛结束, 新比赛即将开始:"));
+			MultiHUD->Announcement->AnnouncementText->SetText(FText::FromString(AnnouncementStr));
+			MultiHUD->Announcement->InfoText->SetText(FText());
 		}
 	}
 }

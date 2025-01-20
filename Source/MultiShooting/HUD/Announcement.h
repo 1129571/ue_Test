@@ -16,12 +16,12 @@ class MULTISHOOTING_API UAnnouncement : public UUserWidget
 	
 public:
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* WarmupTimeText;
+	class UTextBlock* AnnouncementText;
 
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* InfoText;
 
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* AnnouncementText;
+	class UTextBlock* WarmupTimeText;
 
 };

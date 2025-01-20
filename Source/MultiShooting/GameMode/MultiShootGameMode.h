@@ -56,5 +56,6 @@ protected:
 	virtual void OnMatchStateSet() override;
 
 private:
-	float CountdownTime = 0.f;		//Tick 记录当前的热身时间
+	float CountdownTime = 0.f;		//Tick 记录当前游戏倒计时(热身和游戏阶段)
+
 };
