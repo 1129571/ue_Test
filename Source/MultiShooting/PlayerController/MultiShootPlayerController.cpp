@@ -12,6 +12,8 @@
 #include "GameMode/MultiShootGameMode.h"
 #include "Kismet/GameplayStatics.h"
 #include "MultiShootComponents/CombatComponent.h"
+#include "GameState/MultiShootGameState.h"
+#include "PlayerState/MultiShootPlayerState.h"
 
 //处理客户端与服务器之间的连接以及玩家身份的初始化。
 //我们希望尽早获取到CS时间差量
@@ -393,20 +395,44 @@ void AMultiShootPlayerController::HandleMatchHasCooldown()
 			MultiHUD->Announcement->SetVisibility(ESlateVisibility::Visible);
 			FString AnnouncementStr(TEXT("比赛结束, 新比赛即将开始:"));
 			MultiHUD->Announcement->AnnouncementText->SetText(FText::FromString(AnnouncementStr));
-			MultiHUD->Announcement->InfoText->SetText(FText());
+
+			AMultiShootGameState* MultiShootGameState = Cast<AMultiShootGameState>(UGameplayStatics::GetGameState(this));
+			AMultiShootPlayerState* MultiShootPlayerState = GetPlayerState<AMultiShootPlayerState>();
+
+			if (MultiShootGameState && MultiShootPlayerState)
+			{
+				FString InfoStr;
+				TArray<AMultiShootPlayerState*> TopPlayerStatesArry = MultiShootGameState->TopScorePlayers;
+				if (TopPlayerStatesArry.Num() == 0)
+				{
+					InfoStr = TEXT("本局游戏没有击杀任何玩家, 没有Owner");
+				}
+				else
+				{
+					InfoStr = TEXT("本局游戏击杀数最多的玩家为:\n");
+					for (auto TopPlayerStates : TopPlayerStatesArry)
+					{
+						InfoStr.Append(FString::Printf(TEXT("%s\n"), *TopPlayerStates->GetPlayerName()));
+					}
+					if (TopPlayerStatesArry.Contains(MultiShootPlayerState))
+					{
+						FString EndStr = TopPlayerStatesArry.Num() == 1 ? TEXT("唯一胜利者") : TEXT("胜利者之一");
+						InfoStr.Append(FString::Printf(TEXT("\n恭喜!! 你是比赛的%s!!"), *EndStr));
+					}
+				}
+
+				MultiHUD->Announcement->InfoText->SetText(FText::FromString(InfoStr));
+			}
 		}
 	}
 
 	AMultiShootCharacter* MultiShootCharacter = Cast<AMultiShootCharacter>(GetPawn());
-	if (MultiShootCharacter)
+	if (MultiShootCharacter && MultiShootCharacter->GetCombatComponent())
 	{
 		//该状态禁用部分输入
 		MultiShootCharacter->bDisableGameplay = true;
 		//如果正在自动开火也应该停止
-		if (MultiShootCharacter->GetCombatComponent())
-		{
-			MultiShootCharacter->GetCombatComponent()->WeaponFire(false);
-		}
+		MultiShootCharacter->GetCombatComponent()->WeaponFire(false);
 	}
 }
 

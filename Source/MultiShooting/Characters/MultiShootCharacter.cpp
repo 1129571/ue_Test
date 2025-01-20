@@ -332,6 +332,16 @@ void AMultiShootCharacter::Destroyed()
 	{
 		ElimBotComponent->DestroyComponent();
 	}
+
+
+	AMultiShootGameMode* MultiShootGameMode = Cast<AMultiShootGameMode>(UGameplayStatics::GetGameMode(this));
+	bool bMatchNotInProgress = MultiShootGameMode && MultiShootGameMode->GetMatchState() != MatchState::InProgress;
+
+	//刚好在不是InProgress状态死亡, 就将武器一并销毁(可有可无的功能)
+	if (Combat && Combat->EquippedWeapon && bMatchNotInProgress)
+	{
+		Combat->EquippedWeapon->Destroy();
+	}
 }
 
 void AMultiShootCharacter::MulticastElim_Implementation()
@@ -359,6 +369,10 @@ void AMultiShootCharacter::MulticastElim_Implementation()
 	GetCharacterMovement()->DisableMovement();					//不能移动, 但是可以旋转角色
 	GetCharacterMovement()->StopMovementImmediately();			//不能再旋转角色
 	bDisableGameplay = true;									//禁用大部分输入
+	if (Combat)
+	{
+		Combat->WeaponFire(false);
+	}
 
 	//禁用角色碰撞
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);

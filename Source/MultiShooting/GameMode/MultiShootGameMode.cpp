@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 #include "PlayerState/MultiShootPlayerState.h"
+#include "GameState/MultiShootGameState.h"
 
 namespace MatchState
 {
@@ -81,9 +82,13 @@ void AMultiShootGameMode::PlayerEliminated(class AMultiShootCharacter* ElimmedCh
 	//当有玩家死亡时, 其伤害来源的玩家获得加分(自杀除外)
 	AMultiShootPlayerState* AttackerPlayerState = AttacherController ? Cast<AMultiShootPlayerState>(AttacherController->PlayerState) : nullptr;
 	AMultiShootPlayerState* VictimPlayerState = VictimController ? Cast<AMultiShootPlayerState>(VictimController->PlayerState) : nullptr;
-	if (AttackerPlayerState && AttackerPlayerState != VictimPlayerState)
+
+	AMultiShootGameState* MultiShootGameState = GetGameState<AMultiShootGameState>();
+
+	if (AttackerPlayerState && AttackerPlayerState != VictimPlayerState && MultiShootGameState)
 	{
 		AttackerPlayerState->AddToScore(1.f);
+		MultiShootGameState->UpdateTopScore(AttackerPlayerState);
 	}
 
 	if (VictimPlayerState)
