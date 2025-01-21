@@ -90,26 +90,25 @@ protected:
 		UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex
 	);
-
 private:
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	USkeletalMeshComponent* WeaponMesh;
 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	class USphereComponent* AreaSphere;
 
 	//复制变量
-	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_WeaponStateChange, Category = "Weapon Properties")
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_WeaponStateChange, Category = "Weapon")
 	EWeaponState WeaponState;
 
 	//复制变量变化时自动调用的函数
 	UFUNCTION()
 	void OnRep_WeaponStateChange(EWeaponState LastState);
 
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	class UWidgetComponent* PickupWidget;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	class UAnimationAsset* FireAnimation;
 
 	//武器弹出的子弹壳类

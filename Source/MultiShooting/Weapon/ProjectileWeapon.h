@@ -7,7 +7,7 @@
 #include "ProjectileWeapon.generated.h"
 
 /**
- * 拥有子弹的武器基类
+ * 发射物武器基类
  */
 UCLASS()
 class MULTISHOOTING_API AProjectileWeapon : public AWeapon

@@ -213,6 +213,7 @@ public:
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 	FORCEINLINE bool GetDisableGameplay() const { return bDisableGameplay; }
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return Combat; }
+	FORCEINLINE AWeapon* GetOverlappingWeapon() const { return OverlappingWeapon; }
 	FVector GetHitTarget() const;
 	ECombatState GetCombatState() const;
 };

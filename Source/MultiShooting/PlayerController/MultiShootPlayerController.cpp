@@ -366,7 +366,7 @@ void AMultiShootPlayerController::HandleMatchHasStarted()
 
 	if (MultiHUD)
 	{
-		MultiHUD->AddCharacterOverlay();
+		if (MultiHUD->CharacterOverlay == nullptr) MultiHUD->AddCharacterOverlay();
 		if (MultiHUD->Announcement)
 		{
 			MultiHUD->Announcement->SetVisibility(ESlateVisibility::Hidden);

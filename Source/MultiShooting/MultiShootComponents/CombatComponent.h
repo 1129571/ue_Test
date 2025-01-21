@@ -133,8 +133,12 @@ private:
 	void OnRep_CarriedAmmo();
 
 	TMap<EWeaponType, int32> CarriedAmmoMap;		//武器类型--携带弹药数量, 由于Hash特性, TMap无法复制
+
 	UPROPERTY(EditAnywhere)
 	int32 StartingAmmo = 30;
+	UPROPERTY(EditAnywhere)
+	int32 StartingSocketAmmo = 0;
+
 	void InitializeCarriedAmmo();
 
 	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
