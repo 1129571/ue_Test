@@ -19,6 +19,9 @@ AWeapon::AWeapon()
 	// 我们将武器设计为服务器负责, 此处开启复制
 	bReplicates = true;
 
+	//复制运动, 防止客户端和服务器位置不同步的问题
+	SetReplicateMovement(true);
+
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	SetRootComponent(WeaponMesh);
 	//相当于碰撞设置

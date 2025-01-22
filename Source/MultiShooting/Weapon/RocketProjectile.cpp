@@ -9,12 +9,21 @@
 #include "Sound/SoundCue.h"
 #include "Components/BoxComponent.h"
 #include "Components/AudioComponent.h"
+#include "MultiShootComponents/RocketMovementComponent.h"
 
 ARocketProjectile::ARocketProjectile()
 {
 	RocketMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RocketMesh"));
 	RocketMesh->SetupAttachment(RootComponent);
 	RocketMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	//子弹的旋转跟随速度方向, 如应用重力时速度回向下呈抛物线, 弹头方向会每帧更新和速度保持一致
+	RocketMovementComponent = CreateDefaultSubobject<URocketMovementComponent>(TEXT("RocketMovementComponent"));
+	RocketMovementComponent->bRotationFollowsVelocity = true;
+	RocketMovementComponent->SetIsReplicated(true);
+
+	RocketMovementComponent->InitialSpeed = 1500.f;
+	RocketMovementComponent->MaxSpeed = 1500.f;
 }
 
 void ARocketProjectile::BeginPlay()
@@ -69,6 +78,12 @@ void ARocketProjectile::Destroyed()
 
 void ARocketProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (OtherActor == GetOwner())
+	{
+		// 我们如果击中了自己, Rocket 并不会停止运动, 而是继续移动直至碰撞爆炸(在RocketMovementComponent中实现)
+		return;
+	}
+
 	//拥有爆炸伤害的发射物
 	APawn* FirePawn = GetInstigator();		//生成发射物Actor时设置的
 	if (FirePawn && HasAuthority())

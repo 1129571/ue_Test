@@ -55,6 +55,9 @@ protected:
 
 	UPROPERTY()
 	class UAudioComponent* SocketLoopComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	class URocketMovementComponent* RocketMovementComponent;
 private:
 
 	UPROPERTY(VisibleAnywhere)
