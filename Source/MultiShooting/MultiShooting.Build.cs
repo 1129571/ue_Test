@@ -10,7 +10,7 @@ public class MultiShooting : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] { "MultiShooting" });
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "MultiplayerSessions", "OnlineSubsystem", "OnlineSubsystemSteam" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "MultiplayerSessions", "OnlineSubsystem", "OnlineSubsystemSteam", "Niagara" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

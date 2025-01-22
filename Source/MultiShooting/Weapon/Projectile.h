@@ -31,21 +31,22 @@ protected:
 	UPROPERTY(EditAnywhere)
 	float Damage = 20.f;
 
-private:
+	UPROPERTY(EditAnywhere, Category = Projectile)
+	class UParticleSystem* ImpactParticle;		//命中特效
+
+	UPROPERTY(EditAnywhere, Category = Projectile)
+	class USoundCue* ImpactSound;		//命中音效
+
 	UPROPERTY(EditAnywhere)
 	class UBoxComponent* CollisionBox;
+
+private:
 
 	UPROPERTY(VisibleAnywhere)
 	class UProjectileMovementComponent* ProjectileMovementComponent;
 
 	UPROPERTY(EditAnywhere, Category = Projectile)
 	class UParticleSystem* Tracer;		//拖尾特效
-
-	UPROPERTY(EditAnywhere, Category = Projectile)
-	class UParticleSystem* ImpactParticle;		//命中特效
-
-	UPROPERTY(EditAnywhere, Category = Projectile)
-	class USoundCue* ImpactSound;		//命中音效
 
 	UPROPERTY()
 	class UParticleSystemComponent* TracerComponent;

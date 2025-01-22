@@ -112,7 +112,7 @@ private:
 	* 自动开火相关
 	*/
 
-	bool bCanFire = true;		// 是否正在开火, 防止频繁进入自动开火定时器
+	bool bCanFire = true;		// 开火CD是否完成, 防止频繁进入自动开火定时器
 
 	FTimerHandle AutoFireTimer;
 
