@@ -137,7 +137,9 @@ private:
 	UPROPERTY(EditAnywhere)
 	int32 StartingAmmo = 30;
 	UPROPERTY(EditAnywhere)
-	int32 StartingSocketAmmo = 0;
+	int32 StartingSocketAmmo = 4;
+	UPROPERTY(EditAnywhere)
+	int32 StartingPistolAmmo = 15;
 
 	void InitializeCarriedAmmo();
 

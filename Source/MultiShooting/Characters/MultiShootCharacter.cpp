@@ -688,6 +688,9 @@ void AMultiShootCharacter::PlayReloadMontage()
 		case EWeaponType::EWT_RocketLauncher:
 			SelectName = FName("Rifle");
 			break;
+		case EWeaponType::EWT_Pistol:
+			SelectName = FName("Rifle");
+			break;
 		}
 
 		AnimInstance->Montage_JumpToSection(SelectName);
