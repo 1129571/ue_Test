@@ -694,6 +694,9 @@ void AMultiShootCharacter::PlayReloadMontage()
 		case EWeaponType::EWT_SubmachineGun:
 			SelectName = FName("Rifle");
 			break;
+		case EWeaponType::EWT_ShotGun:
+			SelectName = FName("Rifle");
+			break;
 		}
 
 		AnimInstance->Montage_JumpToSection(SelectName);

@@ -9,8 +9,6 @@
 #include "MultiShootTypes/CombatState.h"
 #include "CombatComponent.generated.h"
 
-#define TRACE_LENGTH 80000
-
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MULTISHOOTING_API UCombatComponent : public UActorComponent
@@ -142,6 +140,8 @@ private:
 	int32 StartingPistolAmmo = 15;
 	UPROPERTY(EditAnywhere)
 	int32 StartingSubMachineGunAmmo = 20;
+	UPROPERTY(EditAnywhere)
+	int32 StartingShotGunAmmo = 5;
 
 	void InitializeCarriedAmmo();
 

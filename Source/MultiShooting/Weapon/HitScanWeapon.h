@@ -17,6 +17,10 @@ class MULTISHOOTING_API AHitScanWeapon : public AWeapon
 public:
 	virtual void Fire(const FVector& HitTarget) override;
 
+protected:
+	//传入射线起点和终点, 返回一个射线终点周围(球范围内)带有随机偏移的点
+	FVector TragetEndWithScatter(const FVector& TraceStart, const FVector& HitTarget);
+
 private:
 	UPROPERTY(EditAnywhere)
 	float HitDamage = 20.f;
@@ -34,4 +38,18 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	USoundCue* HitSound;						//开火击中音效
+
+	/**
+	* TragetEndWithScatter所需的一些参数
+	*/
+	UPROPERTY(EditAnywhere, Category = WeaponScatter)
+	float DistanceToSphere = 800.f;
+
+	UPROPERTY(EditAnywhere, Category = WeaponScatter)
+	float SphereRadius = 75.f;
+
+	UPROPERTY(EditAnywhere, Category = WeaponScatter)
+	bool bUseScatter = false;		//是否使用散弹?
+
+
 };
