@@ -39,6 +39,9 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 
 			if (FireHit.bBlockingHit)
 			{
+				/************/ // 击中自己的直接return?
+				if (FireHit.GetActor() == GetOwner()) return;
+				/************/
 				BeamEnd = FireHit.ImpactPoint;
 
 				AMultiShootCharacter* MultiShootCharacter = Cast<AMultiShootCharacter>(FireHit.GetActor());

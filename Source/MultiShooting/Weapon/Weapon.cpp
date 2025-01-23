@@ -94,6 +94,14 @@ void AWeapon::SetWeaponState(EWeaponState NewWeaponState)
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetEnableGravity(false);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		//冲锋枪有一个可以布带, 被装备时我们通过物理效果模拟出布带飘动的效果
+		if (WeaponType == EWeaponType::EWT_SubmachineGun)
+		{
+			WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			WeaponMesh->SetEnableGravity(true);
+			WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		}
 		break;
 	case EWeaponState::EWS_Dropped:
 		if (HasAuthority())
@@ -104,6 +112,11 @@ void AWeapon::SetWeaponState(EWeaponState NewWeaponState)
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetEnableGravity(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+		//冲锋枪有一个可以布带, 掉落时我们还原(到初始化时)碰撞效果
+		WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);				//所有碰撞通道Block
+		WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);		//忽略Pawn通道
+
 		// 设置组件之间的位置, 不然检测组件和控件组件永远在初始位置
 //		AreaSphere->SetRelativeLocation(WeaponMesh->GetComponentLocation());
 //		PickupWidget->SetRelativeLocation(WeaponMesh->GetComponentLocation());
@@ -127,12 +140,23 @@ void AWeapon::OnRep_WeaponStateChange(EWeaponState LastState)
 		//防止Drop过程中玩家试图拾取时因为碰撞导致操作不流畅
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetEnableGravity(false);
-		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); 
+
+		if (WeaponType == EWeaponType::EWT_SubmachineGun)
+		{
+			WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			WeaponMesh->SetEnableGravity(true);
+			WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		}
 		break;
 	case EWeaponState::EWS_Dropped:
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetEnableGravity(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+		WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);				//所有碰撞通道Block
+		WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);		//忽略Pawn通道
+
 		// 设置组件之间的位置, 不然检测组件和控件组件永远在初始位置
 //		AreaSphere->SetRelativeLocation(WeaponMesh->GetComponentLocation());
 //		PickupWidget->SetRelativeLocation(WeaponMesh->GetComponentLocation());
