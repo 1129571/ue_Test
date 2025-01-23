@@ -18,6 +18,6 @@ public:
 	virtual void Fire(const FVector& HitTarget) override;
 
 private:
-	UPROPERTY(EditAnywhere, Category = WeaponScatter)
+	UPROPERTY(EditAnywhere, Category = "Weapon|HitScanWeapon|Scatter")
 	uint32 NumberOfPellets = 12;
 };

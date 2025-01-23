@@ -25,81 +25,48 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	{
 		FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
 		FVector Start = SocketTransform.GetLocation();
-		// *1.25是为了防止射线刚刚好时, 有可能会检测不到
-		FVector End = Start + (HitTarget - Start) * 1.25f;
-
 		FHitResult FireHit;
-		UWorld* World = GetWorld();
-		if (World)
+		WeaponTraceHit(Start, HitTarget, FireHit);
+
+		//希望(如散弹)可以把伤害一次性计算后Apply
+		AMultiShootCharacter* MultiShootCharacter = Cast<AMultiShootCharacter>(FireHit.GetActor());
+		if (MultiShootCharacter && HasAuthority() && InstigatorController)
 		{
-			World->LineTraceSingleByChannel(
-				FireHit,
-				Start,
-				End,
-				ECollisionChannel::ECC_Visibility
+			UGameplayStatics::ApplyDamage(
+				MultiShootCharacter,
+				HitDamage,
+				InstigatorController,
+				this,
+				UDamageType::StaticClass()
 			);
-
-			FVector BeamEnd = End;
-
-			if (FireHit.bBlockingHit)
-			{
-				/************/ // 击中自己的直接return?
-				if (FireHit.GetActor() == GetOwner()) return;
-				/************/
-				BeamEnd = FireHit.ImpactPoint;
-
-				AMultiShootCharacter* MultiShootCharacter = Cast<AMultiShootCharacter>(FireHit.GetActor());
-				if (MultiShootCharacter && HasAuthority() && InstigatorController)
-				{
-					UGameplayStatics::ApplyDamage(
-						MultiShootCharacter,
-						HitDamage,
-						InstigatorController,
-						this,
-						UDamageType::StaticClass()
-					);
-				}
-
-				if (ImpactParticles)
-				{
-					UGameplayStatics::SpawnEmitterAtLocation(
-						World,
-						ImpactParticles,
-						FireHit.ImpactPoint,
-						FireHit.ImpactNormal.Rotation()
-					);
-				}
-
-				//击中音效
-				if (HitSound)
-				{
-					UGameplayStatics::PlaySoundAtLocation(
-						this,
-						HitSound,
-						FireHit.ImpactPoint
-					);
-				}
-			}
-
-			if (BeamParticles)
-			{
-				UParticleSystemComponent* BeamParticleComponent = UGameplayStatics::SpawnEmitterAtLocation(
-					World,
-					BeamParticles,
-					SocketTransform
-					);
-				if (BeamParticleComponent)
-				{
-					BeamParticleComponent->SetVectorParameter(FName("Target"), BeamEnd);
-				}
-			}
-
 		}
+
+		//Todo : 不同部位的击中特效有区别
+		if (ImpactParticles)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),
+				ImpactParticles,
+				FireHit.ImpactPoint,
+				FireHit.ImpactNormal.Rotation()
+			);
+		}
+
+		//Todo: 不同质地的击中音效有区别
+		if (HitSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				HitSound,
+				FireHit.ImpactPoint
+			);
+		}
+
 		//部分武器没有对应动画, 通过这种方式实现枪口闪光 开火音效
 		if (MuzzleFlash)
 		{
 			UGameplayStatics::SpawnEmitterAtLocation(
-				World,
+				GetWorld(),
 				MuzzleFlash,
 				SocketTransform
 			);
@@ -115,7 +82,7 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	}
 }
 
-FVector AHitScanWeapon::TragetEndWithScatter(const FVector& TraceStart, const FVector& HitTarget)
+FVector AHitScanWeapon::TargetEndWithScatter(const FVector& TraceStart, const FVector& HitTarget)
 {
 	FVector ToTargetNormalized = (HitTarget - TraceStart).GetSafeNormal();
 	FVector SphereCenter = TraceStart + ToTargetNormalized * DistanceToSphere;
@@ -127,10 +94,47 @@ FVector AHitScanWeapon::TragetEndWithScatter(const FVector& TraceStart, const FV
 
 	FVector ResultEnd = (TraceStart + ToEndLoc * TRACE_LENGTH / ToEndLoc.Size());
 
-	DrawDebugSphere(GetWorld(), SphereCenter, SphereRadius, 12, FColor::Red, true);			//调试球
-	DrawDebugSphere(GetWorld(), EndLoc, 4.f, 12, FColor::Orange, true);						//调试球内随机点
-	DrawDebugLine(GetWorld(), TraceStart, ResultEnd, FColor::Blue, true);					//调试目标线段
+//	DrawDebugSphere(GetWorld(), SphereCenter, SphereRadius, 12, FColor::Green, true);			//调试球
+//	DrawDebugSphere(GetWorld(), EndLoc, 4.f, 12, FColor::Red, true);						//调试球内随机点
+//	DrawDebugLine(GetWorld(), TraceStart, ResultEnd, FColor::Yellow, true);					//调试目标线段
 
 	// 实际的射击距离是TRACE_LENGTH
 	return ResultEnd;
+}
+
+// (射击)射线检测 + 烟雾拖尾
+void AHitScanWeapon::WeaponTraceHit(const FVector& InStart, const FVector& InHitTarget, FHitResult& OutHitResult)
+{
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		// *1.25是为了防止射线刚刚好时, 有可能会检测不到
+		FVector End = bUseScatter ? TargetEndWithScatter(InStart, InHitTarget) : InStart + (InHitTarget - InStart) * 1.25f;
+		World->LineTraceSingleByChannel(
+			OutHitResult,
+			InStart,
+			End,
+			ECollisionChannel::ECC_Visibility
+		);		
+
+		FVector BeamEnd = End;
+		if (OutHitResult.bBlockingHit)
+		{
+			BeamEnd = OutHitResult.ImpactPoint;
+		}
+		if (BeamParticles)
+		{
+			UParticleSystemComponent* BeamParticleComponent = UGameplayStatics::SpawnEmitterAtLocation(
+				World,
+				BeamParticles,
+				InStart,
+				FRotator::ZeroRotator,
+				true
+			); 
+			if (BeamParticleComponent)
+			{
+				BeamParticleComponent->SetVectorParameter(FName("Target"), BeamEnd);
+			}
+		}
+	}
 }

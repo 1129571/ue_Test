@@ -22,10 +22,63 @@ void AShotGun::Fire(const FVector& HitTarget)
 		FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
 		FVector Start = SocketTransform.GetLocation();
 
-		//散弹终点
+		TMap<AMultiShootCharacter*, uint32> HitMap;			//可能击中多个Charcter
+
 		for (uint32 i = 0; i < NumberOfPellets; i++)
 		{
-			FVector End = TragetEndWithScatter(Start, HitTarget);
+			FHitResult FireHit;
+			WeaponTraceHit(Start, HitTarget, FireHit);		//计算射击目标点并射线检测
+
+			AMultiShootCharacter* MultiShootCharacter = Cast<AMultiShootCharacter>(FireHit.GetActor());
+			if (MultiShootCharacter && HasAuthority() && InstigatorController)
+			{
+				if (HitMap.Contains(MultiShootCharacter))
+				{
+					HitMap[MultiShootCharacter]++;
+				}
+				else 
+				{
+					HitMap.Emplace(MultiShootCharacter, 1);
+				}
+			}
+
+			//击中特效
+			if (ImpactParticles)
+			{
+				UGameplayStatics::SpawnEmitterAtLocation(
+					GetWorld(),
+					ImpactParticles,
+					FireHit.ImpactPoint,
+					FireHit.ImpactNormal.Rotation()
+				);
+			}
+
+			//击中音效
+			if (HitSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(
+					this,
+					HitSound,
+					FireHit.ImpactPoint,
+					0.5f,								//是每个弹丸的音高音量等有一些差距
+					FMath::FRandRange(-0.5f, 0.5f)
+				);
+			}
+		}
+
+		//Apply Damage For All Character
+		for (auto HitPair : HitMap)
+		{
+			if (HitPair.Key && HasAuthority() && InstigatorController)
+			{
+				UGameplayStatics::ApplyDamage(
+					HitPair.Key,
+					HitDamage * HitPair.Value,
+					InstigatorController,
+					this,
+					UDamageType::StaticClass()
+				);
+			}
 		}
 	}
 }

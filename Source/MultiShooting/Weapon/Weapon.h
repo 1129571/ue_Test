@@ -45,28 +45,28 @@ public:
 	void AddAmmo(int32 InAmmoToAdd);
 
 	//武器的准星资源
-	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	class UTexture2D* CrosshairCenter;
-	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	UTexture2D* CrosshairLeft;
-	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	UTexture2D* CrosshairRight;
-	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	UTexture2D* CrosshairTop;
-	UPROPERTY(EditAnywhere, Category = "Weapon|Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	UTexture2D* CrosshairBottom;
 
 	/* 音效资源 */
-	UPROPERTY(EditAnywhere, Category = "Weapon|SoundCue")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	class USoundCue* EquipSound;
 
 	/*
 	* 自动开火武器相关
 	*/
-	UPROPERTY(EditAnywhere, Category = "Weapon|AutoFire")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	bool bCanAutoFire = true;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon|AutoFire")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	float AutoFireDelay = 0.2f;
 
 protected:
