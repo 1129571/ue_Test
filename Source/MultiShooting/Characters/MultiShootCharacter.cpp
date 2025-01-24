@@ -706,6 +706,9 @@ void AMultiShootCharacter::PlayReloadMontage()
 		case EWeaponType::EWT_SniperRifle:
 			SelectName = FName("Rifle");
 			break;
+		case EWeaponType::EWT_GrendaLauncher:
+			SelectName = FName("Rifle");
+			break;
 		}
 
 		AnimInstance->Montage_JumpToSection(SelectName);

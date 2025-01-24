@@ -133,17 +133,19 @@ private:
 	TMap<EWeaponType, int32> CarriedAmmoMap;		//武器类型--携带弹药数量, 由于Hash特性, TMap无法复制
 
 	UPROPERTY(EditAnywhere)
-	int32 StartingAmmo = 30;
+	int32 StartingAmmo = 0;
 	UPROPERTY(EditAnywhere)
-	int32 StartingSocketAmmo = 4;
+	int32 StartingSocketAmmo = 0;
 	UPROPERTY(EditAnywhere)
-	int32 StartingPistolAmmo = 15;
+	int32 StartingPistolAmmo = 0;
 	UPROPERTY(EditAnywhere)
-	int32 StartingSubMachineGunAmmo = 20;
+	int32 StartingSubMachineGunAmmo = 0;
 	UPROPERTY(EditAnywhere)
-	int32 StartingShotGunAmmo = 5;
+	int32 StartingShotGunAmmo = 0;
 	UPROPERTY(EditAnywhere)
-	int32 StartingSniperRifleAmmo = 5;
+	int32 StartingSniperRifleAmmo = 0;
+	UPROPERTY(EditAnywhere)
+	int32 StartingGrendaLauncherAmmo = 0;
 
 	void InitializeCarriedAmmo();
 

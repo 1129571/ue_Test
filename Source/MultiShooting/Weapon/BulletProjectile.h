@@ -4,17 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Projectile.h"
-#include "ProjectileBullet.generated.h"
+#include "BulletProjectile.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class MULTISHOOTING_API AProjectileBullet : public AProjectile
+class MULTISHOOTING_API ABulletProjectile : public AProjectile
 {
 	GENERATED_BODY()
 public:
-	AProjectileBullet();
+	ABulletProjectile();
 	
 protected:
 	virtual void OnHit(

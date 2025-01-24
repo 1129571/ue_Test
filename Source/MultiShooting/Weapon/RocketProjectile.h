@@ -20,10 +20,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	void DestroyTimerFinished();
-
-	virtual void Destroyed() override;
-
 	virtual void OnHit(
 		UPrimitiveComponent* HitComponent,
 		AActor* OtherActor,
@@ -42,12 +38,6 @@ protected:
 	float DamageFalloff = 1.f;		//伤害衰减指数
 
 	UPROPERTY(EditAnywhere)
-	class UNiagaraSystem* SocketTrailSystem;
-
-	UPROPERTY()
-	class UNiagaraComponent* SocketNiagaraComponent;
-
-	UPROPERTY(EditAnywhere)
 	USoundCue* SocketLoopSound;				//飞行途中的音效
 
 	UPROPERTY(EditAnywhere)
@@ -58,14 +48,4 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	class URocketMovementComponent* RocketMovementComponent;
-private:
-
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* RocketMesh;
-
-	//我们希望Niagara特效不要在Actor OnHit后直接销毁, 而是等待一段时间, 将拖尾残留在场景中
-	FTimerHandle DestroyTimer;
-
-	UPROPERTY(EditAnywhere)
-	float DelayDestroyTime = 3.f;
 };

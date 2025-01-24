@@ -9,6 +9,7 @@
 #include "Particles/ParticleSystem.h"
 #include "Sound/SoundCue.h"
 #include "Characters/MultiShootCharacter.h"
+#include "NiagaraFunctionLibrary.h"
 #include "MultiShooting.h"
 
 AProjectile::AProjectile()
@@ -56,6 +57,45 @@ void AProjectile::BeginPlay()
 	}
 }
 
+//处理径向伤害 : 火箭弹和榴弹等
+void AProjectile::ExplodeDamage(float MinDamage, float InnerRadius, float OuterRadius, float DamageFalloff)
+{
+	//拥有爆炸伤害的发射物
+	APawn* FirePawn = GetInstigator();		//生成发射物Actor时设置的
+	if (FirePawn && HasAuthority())
+	{
+		AController* FireController = FirePawn->GetController();
+		if (FireController)
+		{
+			//应用径向伤害 : InnerRadius内受到全额伤害BaseDamage, OuterRadius受到最小伤害, 两者之间受到DamageFalloff指数衰减的伤害
+			//如不希望伤害衰减, 可以使用 bFullDamage = true
+			UGameplayStatics::ApplyRadialDamageWithFalloff(
+				this,
+				Damage,
+				MinDamage,
+				GetActorLocation(),
+				InnerRadius,
+				OuterRadius,
+				DamageFalloff,
+				UDamageType::StaticClass(),
+				TArray<AActor*>(),				//忽略的Actor数组
+				this,							//造成伤害的Actor
+				FireController					//造成伤害的Actor控制器
+			);
+		}
+	}
+}
+
+void AProjectile::StartDestroyTimer()
+{
+	GetWorldTimerManager().SetTimer(DestroyTimer, this, &ThisClass::DestroyTimerFinished, DelayDestroyTime);
+}
+
+void AProjectile::DestroyTimerFinished()
+{
+	Destroy();
+}
+
 //仅在服务器绑定
 void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
@@ -87,6 +127,22 @@ void AProjectile::Destroyed()
 	if (ImpactSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+	}
+}
+
+void AProjectile::SpawnTrailSystem()
+{
+	if (SocketTrailSystem)
+	{
+		SocketNiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			SocketTrailSystem,
+			GetRootComponent(),
+			FName(),
+			GetActorLocation(),
+			GetActorRotation(),
+			EAttachLocation::KeepWorldPosition,
+			false
+		);
 	}
 }
 

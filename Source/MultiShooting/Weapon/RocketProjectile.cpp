@@ -3,7 +3,6 @@
 
 #include "RocketProjectile.h"
 #include "Kismet/GameplayStatics.h"
-#include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystemInstance.h"
 #include "NiagaraComponent.h"
 #include "Sound/SoundCue.h"
@@ -13,9 +12,9 @@
 
 ARocketProjectile::ARocketProjectile()
 {
-	RocketMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RocketMesh"));
-	RocketMesh->SetupAttachment(RootComponent);
-	RocketMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RocketMesh"));
+	ProjectileMesh->SetupAttachment(RootComponent);
+	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	//子弹的旋转跟随速度方向, 如应用重力时速度回向下呈抛物线, 弹头方向会每帧更新和速度保持一致
 	RocketMovementComponent = CreateDefaultSubobject<URocketMovementComponent>(TEXT("RocketMovementComponent"));
@@ -32,22 +31,12 @@ void ARocketProjectile::BeginPlay()
 
 	if (!HasAuthority())
 	{
-		//该Projectile具有模型, 因此处理在服务器应用伤害外, 还有处理模型的隐藏等(客户端和服务器)
+		//该Projectile具有模型, 因此除了在服务器应用伤害外, 还有处理模型的隐藏等(客户端和服务器)
 		CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
 	}
 
-	if (SocketTrailSystem)
-	{
-		SocketNiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
-			SocketTrailSystem,
-			GetRootComponent(),
-			FName(),
-			GetActorLocation(),
-			GetActorRotation(),
-			EAttachLocation::KeepWorldPosition,
-			false
-		);
-	}
+	SpawnTrailSystem();
+
 	if (SocketLoopSound && SocketLoopAttenuation)
 	{
 		SocketLoopComponent = UGameplayStatics::SpawnSoundAttached(
@@ -67,15 +56,6 @@ void ARocketProjectile::BeginPlay()
 	}
 }
 
-void ARocketProjectile::DestroyTimerFinished()
-{
-	Destroy();
-}
-
-void ARocketProjectile::Destroyed()
-{
-}
-
 void ARocketProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (OtherActor == GetOwner())
@@ -84,30 +64,7 @@ void ARocketProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		return;
 	}
 
-	//拥有爆炸伤害的发射物
-	APawn* FirePawn = GetInstigator();		//生成发射物Actor时设置的
-	if (FirePawn && HasAuthority())
-	{
-		AController* FireController = FirePawn->GetController();
-		if (FireController)
-		{
-			//应用径向伤害 : InnerRadius内受到全额伤害BaseDamage, OuterRadius受到最小伤害, 两者之间受到DamageFalloff指数衰减的伤害
-			//如不希望伤害衰减, 可以使用 bFullDamage = true
-			UGameplayStatics::ApplyRadialDamageWithFalloff(
-				this,
-				Damage,
-				MinDamage,
-				GetActorLocation(),
-				InnerRadius,
-				OuterRadius,
-				DamageFalloff,
-				UDamageType::StaticClass(),
-				TArray<AActor*>(),				//忽略的Actor数组
-				this,							//造成伤害的Actor
-				FireController					//造成伤害的Actor控制器
-			);
-		}
-	}
+	ExplodeDamage(MinDamage, InnerRadius, OuterRadius, DamageFalloff);
 
 	//父类是在Destroyed时播放特效和音效, 我们希望RocketProjectile可以在OnHit后延迟销毁, 所以需要再碰撞时就播放
 	if (ImpactParticle)
@@ -123,9 +80,9 @@ void ARocketProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
 	}
 	//隐藏模型, 禁用碰撞
-	if (RocketMesh)
+	if (ProjectileMesh)
 	{
-		RocketMesh->SetVisibility(false);
+		ProjectileMesh->SetVisibility(false);
 	}
 	if (CollisionBox)
 	{
@@ -142,5 +99,5 @@ void ARocketProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherAc
 		SocketLoopComponent->Stop();
 	}
 
-	GetWorldTimerManager().SetTimer(DestroyTimer, this, &ThisClass::DestroyTimerFinished, DelayDestroyTime);
+	StartDestroyTimer();
 }
