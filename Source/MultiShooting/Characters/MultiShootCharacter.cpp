@@ -398,6 +398,12 @@ void AMultiShootCharacter::MulticastElim_Implementation()
 			GetActorLocation()
 		);
 	}
+
+	//狙击枪不能再有开镜Widget
+	if (IsLocallyControlled() && Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle)
+	{
+		ShowSniperScopeWidget(false);
+	}
 }
 
 void AMultiShootCharacter::ElimTimerFinished()
@@ -695,6 +701,9 @@ void AMultiShootCharacter::PlayReloadMontage()
 			SelectName = FName("Rifle");
 			break;
 		case EWeaponType::EWT_ShotGun:
+			SelectName = FName("Rifle");
+			break;
+		case EWeaponType::EWT_SniperRifle:
 			SelectName = FName("Rifle");
 			break;
 		}

@@ -96,7 +96,7 @@ FVector AHitScanWeapon::TargetEndWithScatter(const FVector& TraceStart, const FV
 
 //	DrawDebugSphere(GetWorld(), SphereCenter, SphereRadius, 12, FColor::Green, true);			//调试球
 //	DrawDebugSphere(GetWorld(), EndLoc, 4.f, 12, FColor::Red, true);						//调试球内随机点
-//	DrawDebugLine(GetWorld(), TraceStart, ResultEnd, FColor::Yellow, true);					//调试目标线段
+//chu	DrawDebugLine(GetWorld(), TraceStart, ResultEnd, FColor::Yellow, true);					//调试目标线段
 
 	// 实际的射击距离是TRACE_LENGTH
 	return ResultEnd;

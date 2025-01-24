@@ -258,6 +258,11 @@ void UCombatComponent::SetAiming(bool InbAiming)
 		bIsAiming = InbAiming;
 		OwnedCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
 		ServerSetAiming(InbAiming);
+
+		if (OwnedCharacter->IsLocallyControlled() && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle)
+		{
+			OwnedCharacter->ShowSniperScopeWidget(bIsAiming);
+		}
 	}
 }
 
@@ -286,6 +291,7 @@ void UCombatComponent::InitializeCarriedAmmo()
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_Pistol, StartingPistolAmmo);
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_SubmachineGun, StartingSubMachineGunAmmo);
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_ShotGun, StartingShotGunAmmo);
+	CarriedAmmoMap.Emplace(EWeaponType::EWT_SniperRifle, StartingSniperRifleAmmo);
 }
 
 //本地机器执行

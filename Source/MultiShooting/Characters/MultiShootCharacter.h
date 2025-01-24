@@ -37,6 +37,9 @@ public:
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;				//禁用大部分输入(如Cooldown 状态下只能旋转鼠标)
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void ShowSniperScopeWidget(bool bShowScope);		//狙击枪开镜UI
+
 protected:
 	virtual void BeginPlay() override;
 
